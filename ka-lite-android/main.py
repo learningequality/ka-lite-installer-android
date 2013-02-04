@@ -68,6 +68,26 @@ class AppLayout(GridLayout):
     def generate_keys(self, *args):
         self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
 
+    def create_superuser(self, *args):
+        from django.contrib.auth.models import User
+        if User.objects.filter(is_superuser=True).exists():
+            return 'user exists'
+
+        username = "yoda"
+        email = "yoda@example.com"
+        password = 'yoda'
+
+        self.execute_manager(self.settings, [
+                'manage.py', 'createsuperuser',
+                '--noinput',
+                '--user', username,
+                '--email', email])
+        user = User.objects.get(username__exact=username)
+        user.set_password(password)
+        user.save()
+        return 'user "{0}" with password "{1}"'.format(username,
+                                                       password)
+
     def runserver(self, *args):
         self.execute_manager(self.settings, [
                 'manage.py', 'runwsgiserver',
@@ -85,7 +105,8 @@ class AppLayout(GridLayout):
         self.schedule('import_django', 'Try to import Django')
         self.schedule('syncdb', 'Prepare database')
         if first_run:
-            self.schedule('generatekeys', 'Gen keys')
+            self.schedule('generatekeys', 'Generate keys')
+        self.schedule('create_superuser', 'Create admin user')
         self.schedule('runserver',
                       "Run server. To see the KA Lite site, open " +
                       "http://127.0.0.1:{0} in browser".format(
