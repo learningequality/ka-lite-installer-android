@@ -29,3 +29,10 @@ To build the apk, run the _ant_ with the folowing properties:
 Command could look like this:
 
     ant -Dandroid-sdk=/path/to/android/sdk -Dandroid-ndk=/path/to/android/ndk -Dandroid-api=14 -Dandroid-ndkver=r8c
+
+
+Debug
+-----
+Crashes can be observed `adb logcat`.
+
+Kivy logs are stored in `/mnt/sdcard/org.kalite.test/.kivy/logs` directory.
