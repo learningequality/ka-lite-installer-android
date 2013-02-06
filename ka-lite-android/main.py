@@ -9,6 +9,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.clock import Clock
+from kivy.logger import Logger
 
 
 class AppLayout(GridLayout):
@@ -127,5 +128,5 @@ if __name__ == '__main__':
     except Exception as e:
         msg = "Error: {type}{args}".format(type=type(e),
                                             args=e.args)
-        print msg
+        Logger.exception(msg)
         raise
