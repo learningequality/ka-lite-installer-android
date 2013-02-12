@@ -38,6 +38,9 @@ class ServerThread(threading.Thread):
         self._stop_thread = threading.Event()
         self.activities = Queue.Queue()
 
+        self.tmp_dir = kivy.kivy_home_dir
+        self.pid_file = os.path.join(self.tmp_dir, 'wsgiserver.pid')
+
     def run(self):
         '''Execute queue while not stopped'''
 
@@ -115,13 +118,67 @@ class ServerThread(threading.Thread):
         return 'user "{0}" with password "{1}"'.format(username,
                                                        password)
 
+    def check_server(self):
+        return 'server is running' if self.server_is_running else (
+            'server is stopped')
+
     def start_server(self, server_port, *args):
+        stdout, stderr = sys.stdout, sys.stderr
+        pj = os.path.join
+        try:
+            if os.fork() == 0:
+                sys.stdout = open(pj(self.tmp_dir, 'wsgiserver.stdout'), 'w')
+                sys.stderr = open(pj(self.tmp_dir, 'wsgiserver.stderr'), 'w')
+                self.execute_manager(self.settings, [
+                        'manage.py', 'runwsgiserver',
+                        "port={0}".format(server_port),
+                        # 'host=0.0.0.0',
+                        'host=127.0.0.1',
+                        'daemonize=True',
+                        'pidfile={0}'.format(self.pid_file),
+                        'threads=3'])
+                sys.exit(0)
+        except OSError, e:
+            Logger.exception("Fork error: {type}{args}".format(type=type(e),
+                                                               args=e.args))
+            return 'fail'
+
+        result = 'fail'
+        for i in range(5):
+            if self.server_is_running:
+                result = 'OK'
+                break
+            else:
+                time.sleep(2)
+        if result == 'fail':
+            self.stop_server()
+        return result
+
+    def stop_server(self, *args):
         self.execute_manager(self.settings, [
                 'manage.py', 'runwsgiserver',
-                "port={0}".format(server_port),
-                # 'host=0.0.0.0',
-                'host=127.0.0.1',
-                'threads=3'])
+                'pidfile={0}'.format(self.pid_file),
+                'stop'
+                ])
+        if self.server_is_running:
+            return 'fail'
+
+    @property
+    def server_is_running(self):
+        result = False
+        if os.path.exists(self.pid_file):
+            try:
+                pid = int(open(self.pid_file).read())
+            except ValueError:
+                pass
+            else:
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    pass
+                else:
+                    result = True
+        return result
 
 
 class KALiteApp(App):
@@ -157,10 +214,14 @@ class KALiteApp(App):
         if first_run:
             schedule('generatekeys', 'Generate keys')
         schedule('create_superuser', 'Create admin user')
+        schedule('check_server', 'Check server status')
+        self.start_server()
+
+    def start_server(self):
         description = "Run server. To see the KA Lite site, " + (
-            "open  http://127.0.0.1:{0} in browser").format(
-            self.server_port)
-        schedule('start_server', description, self.server_port)
+            "open  http://127.0.0.1:{0} in browser").format(self.server_port)
+        if not self.kalite.server_is_running:
+            self.kalite.schedule('start_server', description, self.server_port)
 
 
 if __name__ == '__main__':
