@@ -3,5 +3,14 @@
 
 <AppLayout>:
     cols: 1
+    Bubble:
+        arrow_pos: 'bottom_mid'
+        orientation: 'horizontal'
+        BubbleButton:
+            text: 'Start server'
+            on_press: app.start_server()
+        BubbleButton:
+            text: 'Stop server'
+            on_press: app.stop_server()
     Label:
         text: 'KA Lite test'

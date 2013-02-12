@@ -8,6 +8,7 @@ import Queue
 import kivy
 kivy.require('1.0.7')
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.clock import Clock
@@ -192,6 +193,10 @@ class KALiteApp(App):
 
     def build(self):
         self.layout = AppLayout()
+        self.server_box = BoxLayout(orientation='horizontal')
+        self.messages = BoxLayout(orientation='vertical')
+        self.layout.add_widget(self.messages)
+        self.layout.add_widget(self.server_box)
         return self.layout
 
     def on_start(self):
@@ -212,7 +217,7 @@ class KALiteApp(App):
         assert activity in ('start', 'result')
         if activity == 'start':
             self.activity_label = Label(text="{0} ... ".format(message))
-            self.layout.add_widget(self.activity_label)
+            self.messages.add_widget(self.activity_label)
         elif hasattr(self, 'activity_label'):
             self.activity_label.text = self.activity_label.text + message
 
@@ -229,7 +234,6 @@ class KALiteApp(App):
             schedule('generatekeys', 'Generate keys')
         schedule('create_superuser', 'Create admin user')
         schedule('check_server', 'Check server status')
-        self.start_server()
 
     def start_server(self):
         description = "Run server. To see the KA Lite site, " + (
@@ -240,6 +244,7 @@ class KALiteApp(App):
     def stop_server(self):
         if self.kalite.server_is_running:
             self.kalite.schedule('stop_server', 'Stop server')
+
 
 if __name__ == '__main__':
     try:
