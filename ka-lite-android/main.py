@@ -65,6 +65,8 @@ class ServerThread(threading.Thread):
                     if result is None:
                         result = 'OK'
                     self.app.report_activity('result', result)
+        if self.server_is_running:
+            self.stop_server()
 
     def schedule(self, activity, description=None, *args):
         self.activities.put((activity, description, args))
@@ -180,6 +182,9 @@ class ServerThread(threading.Thread):
                     result = True
         return result
 
+    def stop_thread(self, *args):
+        self._stop_thread.set()
+
 
 class KALiteApp(App):
 
@@ -193,6 +198,15 @@ class KALiteApp(App):
         self.kalite = ServerThread(self)
         self.prepare_server()
         self.kalite.start()
+
+    def on_pause(self):
+        return True
+
+    def on_stop(self):
+        if self.kalite.is_alive():
+            self.stop_server()
+            self.kalite.schedule('stop_thread')
+            self.kalite.join()
 
     def report_activity(self, activity, message, *args):
         assert activity in ('start', 'result')
@@ -223,6 +237,9 @@ class KALiteApp(App):
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description, self.server_port)
 
+    def stop_server(self):
+        if self.kalite.server_is_running:
+            self.kalite.schedule('stop_server', 'Stop server')
 
 if __name__ == '__main__':
     try:
