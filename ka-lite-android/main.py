@@ -231,7 +231,7 @@ class KALiteApp(App):
         schedule('import_django', 'Try to import Django')
         schedule('syncdb', 'Prepare database')
         if first_run:
-            schedule('generatekeys', 'Generate keys')
+            schedule('generate_keys', 'Generate keys')
         schedule('create_superuser', 'Create admin user')
         schedule('check_server', 'Check server status')
 
