@@ -19,6 +19,20 @@ class AppLayout(GridLayout):
     pass
 
 
+class ChronographThread(threading.Thread):
+    timeout = 10
+
+    def run(self):
+        from chronograph.models import Job
+        while not 'rest' in 'peace':
+            jobs = Job.objects.due()
+            if jobs.count():
+                for job in jobs:
+                    job.run()
+            else:
+                time.sleep(self.timeout)
+
+
 class ServerThread(threading.Thread):
 
     def __init__(self, app):
@@ -126,6 +140,21 @@ class ServerThread(threading.Thread):
             'server is stopped')
 
     def start_server(self, server_port, *args):
+        if not hasattr(self, 'start_wsgiserver'):
+            # monkey-patching wsgiserver, to start the chronograph thread
+            from django_cherrypy_wsgiserver.management.commands import (
+                runwsgiserver)
+            self.start_wsgiserver = runwsgiserver.start_server
+
+            def monkey_start_server(*args, **kwargs):
+                '''
+                Run a chronograph thread, then start the server.
+                This function is called after the daemonization.
+                '''
+                ChronographThread().start()
+                return self.start_wsgiserver(*args, **kwargs)
+            runwsgiserver.start_server = monkey_start_server
+
         try:
             if os.fork() == 0:
                 pj = os.path.join
