@@ -99,12 +99,19 @@ class ServerThread(threading.Thread):
         return django.get_version()
 
     def setup_environment(self, *args):
-        PROJECT_PATH = os.path.abspath(os.path.curdir)
+        try:
+            import __main__
+            PROJECT_PATH = os.path.dirname(
+                os.path.abspath(__main__.__file__))
+        except:
+            PROJECT_PATH = os.path.abspath(os.path.curdir)
         pj = os.path.join
-        sys.path.insert(1, pj(PROJECT_PATH, "ka-lite/kalite"))
-        sys.path.insert(1, pj(PROJECT_PATH, "ka-lite/python-packages"))
-        os.chdir('ka-lite/kalite')
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+        run_from_egg = sys.path[0].endswith('.zip')
+        sys.path.insert(1 if run_from_egg else 0,
+                        pj(PROJECT_PATH, 'ka-lite/kalite'))
+        sys.path.insert(1, pj(PROJECT_PATH, 'ka-lite/python-packages'))
+        os.chdir(pj(PROJECT_PATH, 'ka-lite', 'kalite'))
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
         self.settings = __import__('settings')
         self.execute_manager = __import__(
             'django.core.management',
