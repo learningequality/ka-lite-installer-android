@@ -123,6 +123,9 @@ class ServerThread(threading.Thread):
                                              '--noinput'])
 
     def generate_keys(self, *args):
+        from config.models import Settings
+        if Settings.get('private_key'):
+            return 'key exists'
         self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
 
     def create_superuser(self, *args):
@@ -278,15 +281,12 @@ class KALiteApp(App):
 
     def prepare_server(self):
         schedule = self.kalite.schedule
-        first_run = False
         if os.path.exists('ka-lite.zip'):
             schedule('extract_kalite', 'Extracting ka-lite archive')
-            first_run = True
         schedule('setup_environment', 'Setup environment')
         schedule('import_django', 'Try to import Django')
         schedule('syncdb', 'Prepare database')
-        if first_run:
-            schedule('generate_keys', 'Generate keys')
+        schedule('generate_keys', 'Generate keys')
         schedule('create_superuser', 'Create admin user')
         schedule('check_server', 'Check server status')
 
