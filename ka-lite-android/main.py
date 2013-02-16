@@ -42,12 +42,14 @@ class ServerThread(threading.Thread):
             '''Execute App method in the main thread'''
 
             def __getattribute__(self, method_name):
-                method = getattr(app, method_name)
-
-                def clock(*args, **kwargs):
-                    Clock.schedule_once(partial(method, *args, **kwargs), 0)
-
-                return clock
+                value = getattr(app, method_name)
+                method = callable(value) and value
+                if method:
+                    def clock(*args, **kwargs):
+                        Clock.schedule_once(partial(method, *args, **kwargs),
+                                            0)
+                    return clock
+                return value
 
         self.app = AppCaller()
         self._stop_thread = threading.Event()
