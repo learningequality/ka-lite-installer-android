@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import socket
 from functools import partial
 from zipfile import ZipFile
 import threading
@@ -141,7 +142,7 @@ class ServerThread(threading.Thread):
         return 'server is running' if self.server_is_running else (
             'server is stopped')
 
-    def start_server(self, server_port, *args):
+    def start_server(self, *args):
         if not hasattr(self, 'start_wsgiserver'):
             # monkey-patching wsgiserver, to start the chronograph thread
             from django_cherrypy_wsgiserver.management.commands import (
@@ -164,7 +165,7 @@ class ServerThread(threading.Thread):
                 sys.stderr = open(pj(self.tmp_dir, 'wsgiserver.stderr'), 'w')
                 self.execute_manager(self.settings, [
                         'manage.py', 'runwsgiserver',
-                        "port={0}".format(server_port),
+                        "port={0}".format(self.app.server_port),
                         # 'host=0.0.0.0',
                         'host=127.0.0.1',
                         'daemonize=True',
@@ -200,17 +201,25 @@ class ServerThread(threading.Thread):
     def server_is_running(self):
         result = False
         if os.path.exists(self.pid_file):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                pid = int(open(self.pid_file).read())
-            except ValueError:
+                sock.connect(('127.0.0.1', int(self.app.server_port)))
+            except socket.error:
                 pass
             else:
                 try:
-                    os.kill(pid, 0)
-                except OSError:
+                    pid = int(open(self.pid_file).read())
+                except ValueError:
                     pass
                 else:
-                    result = True
+                    try:
+                        os.kill(pid, 0)
+                    except OSError:
+                        pass
+                    else:
+                        result = True
+            finally:
+                sock.close()
         return result
 
     def stop_thread(self, *args):
@@ -269,7 +278,7 @@ class KALiteApp(App):
         description = "Run server. To see the KA Lite site, " + (
             "open  http://127.0.0.1:{0} in browser").format(self.server_port)
         if not self.kalite.server_is_running:
-            self.kalite.schedule('start_server', description, self.server_port)
+            self.kalite.schedule('start_server', description)
 
     def stop_server(self):
         if self.kalite.server_is_running:
