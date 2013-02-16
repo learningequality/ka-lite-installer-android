@@ -143,6 +143,15 @@ class ServerThread(threading.Thread):
             'server is stopped')
 
     def start_server(self, *args):
+
+        def redirect_output():
+            if hasattr(sys.stdout, 'close'):
+                sys.stdout.close()
+            if hasattr(sys.stderr, 'close'):
+                sys.stderr.close()
+            sys.stdout = open(pj(self.tmp_dir, 'wsgiserver.stdout'), 'a')
+            sys.stderr = open(pj(self.tmp_dir, 'wsgiserver.stderr'), 'a')
+
         if not hasattr(self, 'start_wsgiserver'):
             # monkey-patching wsgiserver, to start the chronograph thread
             from django_cherrypy_wsgiserver.management.commands import (
@@ -154,6 +163,7 @@ class ServerThread(threading.Thread):
                 Run a chronograph thread, then start the server.
                 This function is called after the daemonization.
                 '''
+                redirect_output()
                 ChronographThread().start()
                 return self.start_wsgiserver(*args, **kwargs)
             runwsgiserver.start_server = monkey_start_server
@@ -161,8 +171,7 @@ class ServerThread(threading.Thread):
         try:
             if os.fork() == 0:
                 pj = os.path.join
-                sys.stdout = open(pj(self.tmp_dir, 'wsgiserver.stdout'), 'w')
-                sys.stderr = open(pj(self.tmp_dir, 'wsgiserver.stderr'), 'w')
+                redirect_output()
                 self.execute_manager(self.settings, [
                         'manage.py', 'runwsgiserver',
                         "port={0}".format(self.app.server_port),
