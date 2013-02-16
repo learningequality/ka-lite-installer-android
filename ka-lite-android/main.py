@@ -95,8 +95,8 @@ class ServerThread(threading.Thread):
 
     def syncdb(self, *args):
         self.execute_manager(self.settings, ['manage.py', 'syncdb',
-                                   '--migrate',
-                                   '--noinput'])
+                                             '--migrate',
+                                             '--noinput'])
 
     def generate_keys(self, *args):
         self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
@@ -126,10 +126,9 @@ class ServerThread(threading.Thread):
             'server is stopped')
 
     def start_server(self, server_port, *args):
-        stdout, stderr = sys.stdout, sys.stderr
-        pj = os.path.join
         try:
             if os.fork() == 0:
+                pj = os.path.join
                 sys.stdout = open(pj(self.tmp_dir, 'wsgiserver.stdout'), 'w')
                 sys.stderr = open(pj(self.tmp_dir, 'wsgiserver.stderr'), 'w')
                 self.execute_manager(self.settings, [
