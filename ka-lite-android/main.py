@@ -59,6 +59,13 @@ class ServerThread(threading.Thread):
         self.tmp_dir = kivy.kivy_home_dir
         self.pid_file = os.path.join(self.tmp_dir, 'wsgiserver.pid')
 
+        try:
+            import __main__
+            self.project_dir = os.path.dirname(
+                os.path.abspath(__main__.__file__))
+        except:
+            self.project_dir = os.path.abspath(os.path.curdir)
+
     def run(self):
         '''Execute queue while not stopped'''
 
@@ -90,27 +97,25 @@ class ServerThread(threading.Thread):
         self.activities.put((activity, description, args))
 
     def extract_kalite(self, *args):
-        z = ZipFile('ka-lite.zip', mode="r")
-        z.extractall('ka-lite')
-        os.remove('ka-lite.zip')
+        os.chdir(self.project_dir)
+        if os.path.exists('ka-lite.zip'):
+            z = ZipFile('ka-lite.zip', mode="r")
+            z.extractall('ka-lite')
+            os.remove('ka-lite.zip')
+        if not os.path.exists('ka-lite'):
+            return 'fail'
 
     def import_django(self, *args):
         import django
         return django.get_version()
 
     def setup_environment(self, *args):
-        try:
-            import __main__
-            PROJECT_PATH = os.path.dirname(
-                os.path.abspath(__main__.__file__))
-        except:
-            PROJECT_PATH = os.path.abspath(os.path.curdir)
         pj = os.path.join
         run_from_egg = sys.path[0].endswith('.zip')
         sys.path.insert(1 if run_from_egg else 0,
-                        pj(PROJECT_PATH, 'ka-lite/kalite'))
-        sys.path.insert(1, pj(PROJECT_PATH, 'ka-lite/python-packages'))
-        os.chdir(pj(PROJECT_PATH, 'ka-lite', 'kalite'))
+                        pj(self.project_dir, 'ka-lite/kalite'))
+        sys.path.insert(1, pj(self.project_dir, 'ka-lite/python-packages'))
+        os.chdir(pj(self.project_dir, 'ka-lite', 'kalite'))
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
         self.settings = __import__('settings')
         self.execute_manager = __import__(
@@ -281,8 +286,7 @@ class KALiteApp(App):
 
     def prepare_server(self):
         schedule = self.kalite.schedule
-        if os.path.exists('ka-lite.zip'):
-            schedule('extract_kalite', 'Extracting ka-lite archive')
+        schedule('extract_kalite', 'Extracting ka-lite archive')
         schedule('setup_environment', 'Setup environment')
         schedule('import_django', 'Try to import Django')
         schedule('syncdb', 'Prepare database')
