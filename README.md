@@ -33,6 +33,15 @@ Command could look like this:
 
 Debug
 -----
-Crashes can be observed `adb logcat`.
+Crashes can be observed with `adb logcat`.
 
 Kivy logs are stored in `/mnt/sdcard/org.kalite.test/.kivy/logs` directory.
+
+
+Run without building
+--------------------
+To run _ka-lite-android_ without building Android application:
+
+   * install Kivy (see [Kivy installation](http://kivy.org/docs/installation/installation.html))
+   * prepare KA Lite, run _ant_: `ant ka-lite`
+   * launch `ka-lite-android/main.py`
