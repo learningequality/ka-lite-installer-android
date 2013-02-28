@@ -99,8 +99,8 @@ class ServerThread(threading.Thread):
     def extract_kalite(self, *args):
         os.chdir(self.project_dir)
         if os.path.exists('ka-lite.zip'):
-            z = ZipFile('ka-lite.zip', mode="r")
-            z.extractall('ka-lite')
+            with ZipFile('ka-lite.zip', mode="r") as z:
+                z.extractall('ka-lite')
             os.remove('ka-lite.zip')
         if not os.path.exists('ka-lite'):
             return 'fail'
