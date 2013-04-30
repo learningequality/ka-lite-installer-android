@@ -1,7 +1,6 @@
 import sys
 import os
 import time
-import socket
 from functools import partial
 from zipfile import ZipFile
 import threading
@@ -15,26 +14,14 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.logger import Logger
 
+from service.main import Server
+
 
 class AppLayout(GridLayout):
     pass
 
 
-class ChronographThread(threading.Thread):
-    timeout = 10
-
-    def run(self):
-        from chronograph.models import Job
-        while not 'rest' in 'peace':
-            jobs = Job.objects.due()
-            if jobs.count():
-                for job in jobs:
-                    job.run()
-            else:
-                time.sleep(self.timeout)
-
-
-class ServerThread(threading.Thread):
+class ServerThread(threading.Thread, Server):
 
     def __init__(self, app):
         super(ServerThread, self).__init__()
@@ -90,8 +77,6 @@ class ServerThread(threading.Thread):
                     if result is None:
                         result = 'OK'
                     self.app.report_activity('result', result)
-        if self.server_is_running:
-            self.stop_server()
 
     def schedule(self, activity, description=None, *args):
         self.activities.put((activity, description, args))
@@ -158,47 +143,7 @@ class ServerThread(threading.Thread):
             'server is stopped')
 
     def start_server(self, *args):
-
-        def redirect_output():
-            if hasattr(sys.stdout, 'close'):
-                sys.stdout.close()
-            if hasattr(sys.stderr, 'close'):
-                sys.stderr.close()
-            sys.stdout = open(pj(self.tmp_dir, 'wsgiserver.stdout'), 'a')
-            sys.stderr = open(pj(self.tmp_dir, 'wsgiserver.stderr'), 'a')
-
-        if not hasattr(self, 'start_wsgiserver'):
-            # monkey-patching wsgiserver, to start the chronograph thread
-            from django_cherrypy_wsgiserver.management.commands import (
-                runwsgiserver)
-            self.start_wsgiserver = runwsgiserver.start_server
-
-            def monkey_start_server(*args, **kwargs):
-                '''
-                Run a chronograph thread, then start the server.
-                This function is called after the daemonization.
-                '''
-                redirect_output()
-                ChronographThread().start()
-                return self.start_wsgiserver(*args, **kwargs)
-            runwsgiserver.start_server = monkey_start_server
-
-        try:
-            if os.fork() == 0:
-                pj = os.path.join
-                redirect_output()
-                self.execute_manager(self.settings, [
-                        'manage.py', 'runwsgiserver',
-                        "port={0}".format(self.app.server_port),
-                        # 'host=0.0.0.0',
-                        'host=127.0.0.1',
-                        'daemonize=True',
-                        'pidfile={0}'.format(self.pid_file),
-                        'threads=3'])
-                sys.exit(0)
-        except OSError, e:
-            Logger.exception("Fork error: {type}{args}".format(type=type(e),
-                                                               args=e.args))
+        if super(ServerThread, self).start_server() == 'fail':
             return 'fail'
 
         result = 'fail'
@@ -213,37 +158,14 @@ class ServerThread(threading.Thread):
         return result
 
     def stop_server(self, *args):
-        self.execute_manager(self.settings, [
-                'manage.py', 'runwsgiserver',
-                'pidfile={0}'.format(self.pid_file),
-                'stop'
-                ])
-        if self.server_is_running:
-            return 'fail'
-
-    @property
-    def server_is_running(self):
-        result = False
-        if os.path.exists(self.pid_file):
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                sock.connect(('127.0.0.1', int(self.app.server_port)))
-            except socket.error:
-                pass
+        super(ServerThread, self).stop_server()
+        result = 'fail'
+        for i in range(5):
+            if not self.server_is_running:
+                result = 'OK'
+                break
             else:
-                try:
-                    pid = int(open(self.pid_file).read())
-                except ValueError:
-                    pass
-                else:
-                    try:
-                        os.kill(pid, 0)
-                    except OSError:
-                        pass
-                    else:
-                        result = True
-            finally:
-                sock.close()
+                time.sleep(2)
         return result
 
     def stop_thread(self, *args):
@@ -252,6 +174,7 @@ class ServerThread(threading.Thread):
 
 class KALiteApp(App):
 
+    server_host = '127.0.0.1'
     server_port = '8024'
 
     def build(self):
@@ -272,7 +195,6 @@ class KALiteApp(App):
 
     def on_stop(self):
         if self.kalite.is_alive():
-            self.stop_server()
             self.kalite.schedule('stop_thread')
             self.kalite.join()
 
@@ -296,13 +218,23 @@ class KALiteApp(App):
 
     def start_server(self):
         description = "Run server. To see the KA Lite site, " + (
-            "open  http://127.0.0.1:{0} in browser").format(self.server_port)
+            "open  http://{}:{} in browser").format(self.server_host,
+                                                    self.server_port)
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description)
 
     def stop_server(self):
         if self.kalite.server_is_running:
             self.kalite.schedule('stop_server', 'Stop server')
+
+    def start_service_part(self, *args):
+        from android import AndroidService
+        self.service = AndroidService('KA Lite', 'server is running')
+        self.service.start(':'.join((self.server_host, self.server_port)))
+
+    def stop_service_part(self, *args):
+        from android import AndroidService
+        AndroidService().stop()
 
 
 if __name__ == '__main__':
