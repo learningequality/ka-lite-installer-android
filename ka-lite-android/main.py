@@ -1,7 +1,7 @@
 import sys
 import os
 import time
-from functools import partial
+from functools import partial, wraps
 from zipfile import ZipFile
 import threading
 import Queue
@@ -81,7 +81,9 @@ class ServerThread(threading.Thread, Server):
     def schedule(self, activity, description=None, *args):
         self.activities.put((activity, description, args))
 
-    def extract_kalite(self, *args):
+    def extract_kalite(self):
+        '''KA Lite code is in the ZIP archive on the first run, extract it'''
+
         os.chdir(self.project_dir)
         if os.path.exists('ka-lite.zip'):
             with ZipFile('ka-lite.zip', mode="r") as z:
@@ -90,11 +92,11 @@ class ServerThread(threading.Thread, Server):
         if not os.path.exists('ka-lite'):
             return 'fail'
 
-    def import_django(self, *args):
+    def import_django(self):
         import django
         return django.get_version()
 
-    def setup_environment(self, *args):
+    def setup_environment(self):
         pj = os.path.join
         run_from_egg = sys.path[0].endswith('.zip')
         sys.path.insert(1 if run_from_egg else 0,
@@ -107,24 +109,24 @@ class ServerThread(threading.Thread, Server):
             'django.core.management',
             fromlist=('execute_manager',)).execute_manager
 
-    def syncdb(self, *args):
+    def syncdb(self):
         self.execute_manager(self.settings, ['manage.py', 'syncdb',
                                              '--migrate',
                                              '--noinput'])
 
-    def generate_keys(self, *args):
+    def generate_keys(self):
         from config.models import Settings
         if Settings.get('private_key'):
             return 'key exists'
         self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
 
-    def create_superuser(self, *args):
+    def create_superuser(self):
         from django.contrib.auth.models import User
         if User.objects.filter(is_superuser=True).exists():
             return 'user exists'
 
-        username = "yoda"
-        email = "yoda@example.com"
+        username = 'yoda'
+        email = 'yoda@example.com'
         password = 'yoda'
 
         self.execute_manager(self.settings, [
@@ -142,7 +144,7 @@ class ServerThread(threading.Thread, Server):
         return 'server is running' if self.server_is_running else (
             'server is stopped')
 
-    def start_server(self, *args):
+    def start_server(self):
         if super(ServerThread, self).start_server() == 'fail':
             return 'fail'
 
@@ -157,7 +159,7 @@ class ServerThread(threading.Thread, Server):
             self.stop_server()
         return result
 
-    def stop_server(self, *args):
+    def stop_server(self):
         super(ServerThread, self).stop_server()
         result = 'fail'
         for i in range(5):
@@ -168,13 +170,26 @@ class ServerThread(threading.Thread, Server):
                 time.sleep(2)
         return result
 
-    def stop_thread(self, *args):
+    def stop_thread(self):
         self._stop_thread.set()
+
+
+def clock_callback(f):
+    '''Decorator for Clock callbacks'''
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        # Time diff is passed as an argument, call without it
+        return f(*args[:-1], **kwargs)
+
+    return wrapper
 
 
 class KALiteApp(App):
 
     server_host = '127.0.0.1'
+    # choose a non-default port,
+    # to avoid messing with other KA Lite installations
     server_port = '8024'
 
     def build(self):
@@ -198,7 +213,8 @@ class KALiteApp(App):
             self.kalite.schedule('stop_thread')
             self.kalite.join()
 
-    def report_activity(self, activity, message, *args):
+    @clock_callback
+    def report_activity(self, activity, message):
         assert activity in ('start', 'result')
         if activity == 'start':
             self.activity_label = Label(text="{0} ... ".format(message))
@@ -207,6 +223,8 @@ class KALiteApp(App):
             self.activity_label.text = self.activity_label.text + message
 
     def prepare_server(self):
+        '''Schedule preparation steps to be executed in the server thread'''
+
         schedule = self.kalite.schedule
         schedule('extract_kalite', 'Extracting ka-lite archive')
         schedule('setup_environment', 'Setup environment')
@@ -227,12 +245,15 @@ class KALiteApp(App):
         if self.kalite.server_is_running:
             self.kalite.schedule('stop_server', 'Stop server')
 
-    def start_service_part(self, *args):
+    @clock_callback
+    def start_service_part(self):
         from android import AndroidService
         self.service = AndroidService('KA Lite', 'server is running')
+        # start executing service/main.py as a service
         self.service.start(':'.join((self.server_host, self.server_port)))
 
-    def stop_service_part(self, *args):
+    @clock_callback
+    def stop_service_part(self):
         from android import AndroidService
         AndroidService().stop()
 

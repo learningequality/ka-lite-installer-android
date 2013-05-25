@@ -34,7 +34,7 @@ class KALiteServer(object):
         sys.stdout = open(pj(tmp_dir, 'wsgiserver.stdout'), 'a')
         sys.stderr = open(pj(tmp_dir, 'wsgiserver.stderr'), 'a')
 
-    def setup_chronograph(self, *args):
+    def setup_chronograph(self):
         if not hasattr(self, 'start_wsgiserver'):
             # monkey-patching wsgiserver, to start the chronograph thread
             from django_cherrypy_wsgiserver.management.commands import (
@@ -147,6 +147,7 @@ else:
 
 
 if __name__ == '__main__':
+    # executed by the service part
     if platform() == 'android':
         host, port = os.getenv('PYTHON_SERVICE_ARGUMENT').split(':')
         AndroidServer()._start_server(host, port)

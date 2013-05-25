@@ -50,7 +50,7 @@
   </condition>
 </target>
 
-<target name="distribute" 
+<target name="distribute"
         description="build Python and modules"
         depends="check-python-for-android-dist"
         unless="python-for-android-dist-exists">
@@ -79,10 +79,14 @@
         description="clone the KA Lite repo, zip it"
         depends="check-ka-lite"
         unless="ka-lite-exists">
+  <!-- When building the apk, Python for Android will try to compile
+       all the .py files (including Django and other KA Lite python-packages/),
+       that may lead to strange errors when running this code on Android.
+       Zipping serves as a protection for .py files. -->
   <exec executable="git" failonerror="true">
-    <arg line="clone --recursive https://github.com/jamalex/ka-lite.git" />
-  </exec>  
-  <!-- remove symbolic link -->
+    <arg line="clone --recursive https://github.com/learningequality/ka-lite.git" />
+  </exec>
+  <!-- remove self-referencing symbolic link, that could break things -->
   <delete file="ka-lite/kalite/faq/faq" />
   <zip destfile="ka-lite-android/ka-lite.zip"
        basedir="ka-lite" />

@@ -43,5 +43,5 @@ Run without building
 To run _ka-lite-android_ without building Android application:
 
    * install Kivy (see [Kivy installation](http://kivy.org/docs/installation/installation.html))
-   * prepare KA Lite, run _ant_: `ant ka-lite`
+   * prepare KA Lite: `ant ka-lite`
    * launch `ka-lite-android/main.py`
