@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<project name="KA Lite Android builder" default="main" basedir=".">
+
+<target name="main" depends="android-vars, python-for-android, distribute,
+                             ka-lite, build">
+
+</target>
+
+<target name="android-vars"
+        description="ask user about SDK an NDK locations, if locations are not set.
+                     set API and NDK versions.">
+  <property name="android-api" value="14" />
+  <property name="android-ndkver" value="r8c" />
+
+  <input addProperty="android-sdk" message="Type the path to the Android SDK:" />
+  <condition property="android-sdk-not-exists">
+    <not>
+      <available file="${android-sdk}" type="dir" />
+    </not>
+  </condition>
+  <fail if="android-sdk-not-exists" message="Invalid SDK path" />
+
+  <input addProperty="android-ndk" message="Type the path to the Android NDK:" />
+  <condition property="android-ndk-not-exists">
+    <not>
+      <available file="${android-ndk}" type="dir" />
+    </not>
+  </condition>
+  <fail if="android-ndk-not-exists" message="Invalid NDK path" />
+</target>
+
+<target name="check-python-for-android">
+  <condition property="python-for-android-exists">
+      <available file="python-for-android" type="dir" />
+  </condition>
+</target>
+
+<target name="python-for-android"
+        description="clone the Python for Android repo"
+        depends="check-python-for-android"
+        unless="python-for-android-exists">
+  <exec executable="git" failonerror="true">
+    <arg line="clone https://github.com/kivy/python-for-android.git" />
+  </exec>
+</target>
+
+<target name="check-python-for-android-dist">
+  <condition property="python-for-android-dist-exists">
+      <available file="python-for-android/dist/default" type="dir" />
+  </condition>
+</target>
+
+<target name="distribute"
+        description="build Python and modules"
+        depends="check-python-for-android-dist"
+        unless="python-for-android-dist-exists">
+  <exec dir="python-for-android" executable="./distribute.sh" failonerror="true">
+    <env key="ANDROIDAPI" value="${android-api}" />
+    <env key="ANDROIDNDKVER" value="${android-ndkver}" />
+    <env key="ANDROIDSDK" value="${android-sdk}" />
+    <env key="ANDROIDNDK" value="${android-ndk}" />
+    <arg value="-m" />
+    <arg value="sqlite3 openssl kivy" />
+  </exec>
+  <!-- include sqlite3 and wsgiref modules -->
+  <replaceregexp file="python-for-android/dist/default/blacklist.txt"
+                 match="(^.*wsgiref.*$)|(^.*(sqlite3).*$)"
+                 replace="#"
+                 byline="true" />
+</target>
+
+<target name="check-ka-lite">
+  <condition property="ka-lite-exists">
+      <available file="ka-lite-android/ka-lite.zip" type="file" />
+  </condition>
+</target>
+
+<target name="ka-lite"
+        description="clone the KA Lite repo, zip it"
+        depends="check-ka-lite"
+        unless="ka-lite-exists">
+  <!-- When building the apk, Python for Android will try to compile
+       all the .py files (including Django and other KA Lite python-packages/),
+       that may lead to strange errors when running this code on Android.
+       Zipping serves as a protection for .py files. -->
+  <exec executable="git" failonerror="true">
+    <arg line="clone --recursive https://github.com/learningequality/ka-lite.git" />
+  </exec>
+  <!-- remove self-referencing symbolic link, that could break things -->
+  <delete file="ka-lite/kalite/faq/faq" />
+  <zip destfile="ka-lite-android/ka-lite.zip"
+       basedir="ka-lite" />
+</target>
+
+<target name="build" description="build KA Lite application">
+  <property name="app-name" value="KA Lite test" />
+
+  <!-- apk version = git tag name -->
+  <exec executable="git" outputproperty="app-version">
+    <arg line="describe --abbrev=0 --tags" />
+  </exec>
+
+  <exec dir="python-for-android/dist/default" executable="./build.py" failonerror="true">
+    <env key="ANDROIDAPI" value="${android-api}" />
+    <env key="ANDROIDNDKVER" value="${android-ndkver}" />
+    <env key="ANDROIDSDK" value="${android-sdk}" />
+    <env key="ANDROIDNDK" value="${android-ndk}" />
+    <arg line="--package org.kalite.test --name '${app-name}' --version ${app-version}" />
+    <arg line="--dir ../../../ka-lite-android/" />
+    <arg line="--install-location preferExternal" />
+    <arg line="--permission INTERNET" />
+    <arg line="debug" />
+    <!-- <arg line="installd" /> -->
+  </exec>
+
+  <path id="bins-path">
+    <pathelement location="python-for-android/dist/default/bin" />
+  </path>
+  <pathconvert property="converted-bins-path" refid="bins-path" />
+  <echo message='Apk is ready, see "${converted-bins-path}" dir' />
+</target>
+
+</project>
