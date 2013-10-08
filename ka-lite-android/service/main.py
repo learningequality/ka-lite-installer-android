@@ -40,8 +40,9 @@ class KALiteServer(object):
         if not hasattr(self, 'start_wsgiserver'):
             # monkey-patching wsgiserver, to start the chronograph thread
             from django_cherrypy_wsgiserver.management.commands import (
-                runwsgiserver)
-            self.start_wsgiserver = runwsgiserver.start_server
+                runcherrypyserver)
+            import cherrypy
+            self.start_wsgiserver = cherrypy.quickstart
 
             def monkey_start_server(*args, **kwargs):
                 '''
@@ -51,7 +52,7 @@ class KALiteServer(object):
                 self.redirect_output()
                 ChronographThread().start()
                 return self.start_wsgiserver(*args, **kwargs)
-            runwsgiserver.start_server = monkey_start_server
+            cherrypy.quickstart = monkey_start_server
 
     def start_server(self):
         self.setup_chronograph()
@@ -59,7 +60,7 @@ class KALiteServer(object):
             if os.fork() == 0:
                 self.redirect_output()
                 self.execute_manager(self.settings, [
-                        'manage.py', 'runwsgiserver',
+                        'manage.py', 'runcherrypyserver',
                         "host={}".format(self.app.server_host),
                         "port={}".format(self.app.server_port),
                         "pidfile={}".format(self.pid_file),
@@ -73,7 +74,7 @@ class KALiteServer(object):
 
     def stop_server(self):
         self.execute_manager(self.settings, [
-                'manage.py', 'runwsgiserver',
+                'manage.py', 'runcherrypyserver',
                 'pidfile={0}'.format(self.pid_file),
                 'stop'
                 ])
@@ -135,7 +136,7 @@ class AndroidServer(KALiteServer):
         import settings
         from django.core.management import execute_manager
         execute_manager(settings, [
-                'manage.py', 'runwsgiserver',
+                'manage.py', 'runcherrypyserver',
                 "host={}".format(host),
                 "port={}".format(port),
                 'daemonize=False',
