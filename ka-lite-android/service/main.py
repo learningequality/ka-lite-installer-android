@@ -33,8 +33,8 @@ class KALiteServer(object):
         if hasattr(sys.stderr, 'close'):
             sys.stderr.close()
         tmp_dir = getattr(self, 'tmp_dir', kivy.kivy_home_dir)
-        sys.stdout = open(pj(tmp_dir, 'wsgiserver.stdout'), 'a')
-        sys.stderr = open(pj(tmp_dir, 'wsgiserver.stderr'), 'a')
+        sys.stdout = open(pj(tmp_dir, 'wsgiserver.stdout'), 'a', 0)
+        sys.stderr = open(pj(tmp_dir, 'wsgiserver.stderr'), 'a', 0)
 
     def setup_chronograph(self):
         if not hasattr(self, 'start_wsgiserver'):
