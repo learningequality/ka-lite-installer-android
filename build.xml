@@ -62,9 +62,9 @@
     <arg value="-m" />
     <arg value="sqlite3 openssl kivy" />
   </exec>
-  <!-- include sqlite3 and wsgiref modules -->
+  <!-- include sqlite3, wsgiref, csv, unittest modules -->
   <replaceregexp file="python-for-android/dist/default/blacklist.txt"
-                 match="(^.*wsgiref.*$)|(^.*(sqlite3).*$)"
+                 match="(^.*wsgiref.*$)|(^.*(sqlite3).*$)|(^.*(_csv).*$)|(^.*(unittest).*$)"
                  replace="#"
                  byline="true" />
 </target>
