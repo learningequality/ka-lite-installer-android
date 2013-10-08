@@ -8,6 +8,8 @@ from kivy.utils import platform
 import kivy
 pj = os.path.join
 
+import logging
+logging.root = Logger
 
 class ChronographThread(threading.Thread):
     timeout = 10
