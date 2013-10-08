@@ -36,6 +36,23 @@ class KALiteServer(object):
         sys.stdout = open(pj(tmp_dir, 'wsgiserver.stdout'), 'a', 0)
         sys.stderr = open(pj(tmp_dir, 'wsgiserver.stderr'), 'a', 0)
 
+    def workaround(self):
+
+        def ensure_dir(path):    
+            """Create the entire directory path, if it doesn't exist already."""
+            path_parts = path.split("/")
+            full_path = "/"
+            for part in path_parts:
+                #if "." in part:
+                #    raise InvalidDirectoryFormat()
+                if part is not '':
+                    full_path += part + "/"
+                    if not os.path.exists(full_path):
+                        os.makedirs(full_path)
+        from utils import general
+        general.ensure_dir  = ensure_dir
+
+
     def setup_chronograph(self):
         if not hasattr(self, 'start_wsgiserver'):
             # monkey-patching wsgiserver, to start the chronograph thread
@@ -49,6 +66,7 @@ class KALiteServer(object):
                 Run a chronograph thread, then start the server.
                 This function is called after the daemonization.
                 '''
+                self.workaround()
                 self.redirect_output()
                 ChronographThread().start()
                 return self.start_wsgiserver(*args, **kwargs)
