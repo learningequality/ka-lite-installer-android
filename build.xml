@@ -95,9 +95,9 @@
 <target name="build" description="build KA Lite application">
   <property name="app-name" value="KA Lite test" />
 
-  <!-- apk version = git tag name -->
-  <exec executable="git" outputproperty="app-version">
-    <arg line="describe --abbrev=0 --tags" />
+  <!-- apk version = KA Lite version number -->
+  <exec dir="ka-lite/kalite" executable="python" outputproperty="app-version">
+    <arg line="-c 'import version; print version.VERSION'" />
   </exec>
 
   <exec dir="python-for-android/dist/default" executable="./build.py" failonerror="true">
