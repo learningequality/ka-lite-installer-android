@@ -8,6 +8,8 @@ from kivy.utils import platform
 import kivy
 pj = os.path.join
 
+import logging
+logging.root = Logger
 
 class ChronographThread(threading.Thread):
     timeout = 10
@@ -31,25 +33,44 @@ class KALiteServer(object):
         if hasattr(sys.stderr, 'close'):
             sys.stderr.close()
         tmp_dir = getattr(self, 'tmp_dir', kivy.kivy_home_dir)
-        sys.stdout = open(pj(tmp_dir, 'wsgiserver.stdout'), 'a')
-        sys.stderr = open(pj(tmp_dir, 'wsgiserver.stderr'), 'a')
+        sys.stdout = open(pj(tmp_dir, 'wsgiserver.stdout'), 'a', 0)
+        sys.stderr = open(pj(tmp_dir, 'wsgiserver.stderr'), 'a', 0)
+
+    def workaround(self):
+
+        def ensure_dir(path):    
+            """Create the entire directory path, if it doesn't exist already."""
+            path_parts = path.split("/")
+            full_path = "/"
+            for part in path_parts:
+                #if "." in part:
+                #    raise InvalidDirectoryFormat()
+                if part is not '':
+                    full_path += part + "/"
+                    if not os.path.exists(full_path):
+                        os.makedirs(full_path)
+        from utils import general
+        general.ensure_dir  = ensure_dir
+
 
     def setup_chronograph(self):
         if not hasattr(self, 'start_wsgiserver'):
             # monkey-patching wsgiserver, to start the chronograph thread
             from django_cherrypy_wsgiserver.management.commands import (
-                runwsgiserver)
-            self.start_wsgiserver = runwsgiserver.start_server
+                runcherrypyserver)
+            import cherrypy
+            self.start_wsgiserver = cherrypy.quickstart
 
             def monkey_start_server(*args, **kwargs):
                 '''
                 Run a chronograph thread, then start the server.
                 This function is called after the daemonization.
                 '''
+                self.workaround()
                 self.redirect_output()
                 ChronographThread().start()
                 return self.start_wsgiserver(*args, **kwargs)
-            runwsgiserver.start_server = monkey_start_server
+            cherrypy.quickstart = monkey_start_server
 
     def start_server(self):
         self.setup_chronograph()
@@ -57,7 +78,7 @@ class KALiteServer(object):
             if os.fork() == 0:
                 self.redirect_output()
                 self.execute_manager(self.settings, [
-                        'manage.py', 'runwsgiserver',
+                        'manage.py', 'runcherrypyserver',
                         "host={}".format(self.app.server_host),
                         "port={}".format(self.app.server_port),
                         "pidfile={}".format(self.pid_file),
@@ -71,7 +92,7 @@ class KALiteServer(object):
 
     def stop_server(self):
         self.execute_manager(self.settings, [
-                'manage.py', 'runwsgiserver',
+                'manage.py', 'runcherrypyserver',
                 'pidfile={0}'.format(self.pid_file),
                 'stop'
                 ])
@@ -133,7 +154,7 @@ class AndroidServer(KALiteServer):
         import settings
         from django.core.management import execute_manager
         execute_manager(settings, [
-                'manage.py', 'runwsgiserver',
+                'manage.py', 'runcherrypyserver',
                 "host={}".format(host),
                 "port={}".format(port),
                 'daemonize=False',

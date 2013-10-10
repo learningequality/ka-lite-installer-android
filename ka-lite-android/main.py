@@ -14,8 +14,10 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.logger import Logger
 
-from service.main import Server
+import logging
+logging.root = Logger
 
+from service.main import Server
 
 class AppLayout(GridLayout):
     pass
