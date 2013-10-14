@@ -94,6 +94,10 @@ class ServerThread(threading.Thread, Server):
         if not os.path.exists('ka-lite'):
             return 'fail'
 
+    def python_version(self):
+        import sys
+        return sys.version.split()[0]
+
     def import_django(self):
         import django
         return django.get_version()
@@ -103,6 +107,8 @@ class ServerThread(threading.Thread, Server):
         run_from_egg = sys.path[0].endswith('.zip')
         sys.path.insert(1 if run_from_egg else 0,
                         pj(self.project_dir, 'ka-lite/kalite'))
+        sys.path.insert(1 if run_from_egg else 0,
+                        pj(self.project_dir, 'ka-lite'))
         sys.path.insert(1, pj(self.project_dir, 'ka-lite/python-packages'))
         os.chdir(pj(self.project_dir, 'ka-lite', 'kalite'))
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
@@ -113,8 +119,9 @@ class ServerThread(threading.Thread, Server):
 
     def syncdb(self):
         self.execute_manager(self.settings, ['manage.py', 'syncdb',
-                                             '--migrate',
-                                             '--noinput'])
+                                         '--noinput'])
+        self.execute_manager(self.settings, ['manage.py', 'migrate',
+                                         '--merge'])
 
     def generate_keys(self):
         from config.models import Settings
@@ -189,7 +196,7 @@ def clock_callback(f):
 
 class KALiteApp(App):
 
-    server_host = '127.0.0.1'
+    server_host = '0.0.0.0'
     # choose a non-default port,
     # to avoid messing with other KA Lite installations
     server_port = '8024'
@@ -229,12 +236,13 @@ class KALiteApp(App):
 
         schedule = self.kalite.schedule
         schedule('extract_kalite', 'Extracting ka-lite archive')
-        schedule('setup_environment', 'Setup environment')
-        schedule('import_django', 'Try to import Django')
-        schedule('syncdb', 'Prepare database')
-        schedule('generate_keys', 'Generate keys')
-        schedule('create_superuser', 'Create admin user')
-        schedule('check_server', 'Check server status')
+        schedule('setup_environment', 'Setting up environment')
+        schedule('python_version', 'Checking Python version')
+        schedule('import_django', 'Trying to import Django')
+        schedule('syncdb', 'Preparing database')
+        schedule('generate_keys', 'Generating keys')
+        schedule('create_superuser', 'Creating admin user')
+        schedule('check_server', 'Checking server status')
 
     def start_server(self):
         description = "Run server. To see the KA Lite site, " + (

@@ -11,6 +11,8 @@
 # generated files
 bin/
 gen/
+*.pyo
+ka-lite.zip
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -18,3 +20,14 @@ local.properties
 # Eclipse project files
 .classpath
 .project
+
+# Sublime project files
+*.sublime-project
+*.sublime-workspace
+
+# submodules
+ka-lite
+python-for-android
+
+log.txt
+

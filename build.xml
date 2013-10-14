@@ -88,6 +88,13 @@
   </exec>
   <!-- remove self-referencing symbolic link, that could break things -->
   <delete file="ka-lite/kalite/faq/faq" />
+  <!-- copy in our local_settings.py file that disables caching, reduces the number of threads, etc -->
+  <copy file="local_settings.py" todir="ka-lite/kalite" />
+  <!-- shorten long .py filenames now to avoid bad truncation during later build process -->
+  <exec executable="python" failonerror="true">
+     <arg line="shorten_filenames.py" />
+  </exec>
+  <!-- build the zip file of the ka-lite codebase -->
   <zip destfile="ka-lite-android/ka-lite.zip"
        basedir="ka-lite" />
 </target>

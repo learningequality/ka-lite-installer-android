@@ -17,6 +17,8 @@ See [Python for Android prerequisites](http://python-for-android.readthedocs.org
 
 Installed Python, Git, Apache Ant, Android SDK, and Android NDK are definitely needed.
 
+You'll need to ensure you have the development headers for sqlite3 installed: `sudo apt-get install libsqlite3-dev`.
+
 Build
 -----
 To build the apk, run the _ant_ with the folowing properties:
