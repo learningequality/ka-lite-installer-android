@@ -1,4 +1,4 @@
-ka-lite-android
+KA Lite Wrapper for Android
 ===============
 
 Android port of KA Lite (an offline version of Khan Academy), encapsulating the Django project.
