@@ -1,0 +1,54 @@
+{% extends "distributed/base_teach.html" %}
+{% load i18n %}
+{% load staticfiles %}
+{% load my_filters %}
+
+{% block reports_active %}reports-active active-tab active-nav{% endblock reports_active %}
+{% block teacher_active %}active{% endblock teacher_active %}
+{% block admin_active %}active{% endblock admin_active %}
+
+{% block title %}{% trans "User report" %} {{ block.super }}{% endblock title%}
+{% block report_title %}{% trans "User report" %}{% endblock report_title %}
+
+{# Headjs needed so coachreporting app can import #}
+{% block headjs %}
+    {{ block.super }}
+    {# Inner block needed so that control panel can import the JS necessary #}
+    {% block student_report_js %}
+        <script src="{% url 'handlebars_templates' module_name='student_progress' %}"></script>
+        <script>
+            var PLAYLIST_PROGRESS_URL = "{% url 'api_dispatch_list' resource_name='playlist_progress' %}";
+            var PLAYLIST_PROGRESS_DETAIL_URL = "{% url 'api_dispatch_list' resource_name='playlist_progress_detail' %}";
+            var STUDENT_ID = "{{ student.id }}";
+        </script>
+        <script type="text/javascript" src="{% static 'js/coachreports/student_progress.js' %}"></script>
+
+    {% endblock student_report_js %}
+{% endblock headjs %}
+
+{% block headcss %}
+    {{ block.super }}
+    {# Re-import control-panel bootstrap so that styles within coach report look correct #}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/control_panel/student-report.css' %}" />
+{% endblock headcss %}
+
+{% block content %}
+    {{ block.super }}
+    
+    <div class="row">
+        <div class="col-md-12">
+            <p class="pull-left">
+                <a href="{% url 'facility_management' zone_id=None facility_id=facility_id %}">
+                    &#x2190; {% trans "Back to Facilities" %}
+                </a>
+            </p>
+        </div>
+    </div>
+
+    {% block student_report %}
+        <div class="container">
+            <div id="student-progress-container"></div>
+        </div>
+    {% endblock student_report %}
+
+{% endblock content %}

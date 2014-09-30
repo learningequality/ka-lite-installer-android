@@ -1,0 +1,119 @@
+{% extends "control_panel/base_printable.html" %}
+{% load i18n %}
+{% load my_filters %}
+{% load staticfiles %}
+
+{% block control_panel_active %}{% endblock %}
+{% block users_active %}active{% endblock %}
+{% block facility_active %}facility-active active-tab active-nav{% endblock facility_active %}
+{% block user_active %}users-active active-tab active-nav{% endblock user_active %}
+
+{% block title %}{{ facility.name }} - {% trans "Facility Management" %}{{ block.super }}{% endblock title %}
+
+{% block headcss %}{{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/ui-datepicker.css' %}" />
+{% endblock headcss %}
+
+{% block headjs %}{{ block.super }}
+    <script type="text/javascript" src="{% static 'js/jquery.sparkline.min.js' %}"></script>
+    <script type="text/javascript">
+        var end_date = new Date("{{ date_range.1 }}");
+        var start_date = new Date("{{ date_range.0 }}");
+
+        if (start_date >= end_date) {
+            start_date.setDate(end_date.getDate() - 30)
+        }
+
+        var TEMPLATE_GROUP_URL = "{% url 'group_management' zone_id=zone_id facility_id=facility.id group_id='None' %}";
+
+        $(function() {
+
+            $('#start_date_select').datepicker({
+                dateFormat: "d MM yy",
+                altField: "#start_standard_date",
+                altFormat: "yy-mm-dd",
+                autoclose: true,
+            });
+
+            $('#end_date_select').datepicker({
+                dateFormat: "d MM yy",
+                altField: "#end_standard_date",
+                altFormat: "yy-mm-dd"
+            });
+        });
+
+        $(function(){
+            $("#top_export_button_id").click(function() {
+                $('#export_csv_div_id').modal();
+                $("#start_date_select").datepicker('setDate', start_date);
+                $("#end_date_select").datepicker('setDate', end_date);
+            });
+
+            $("#CSV_EXPORT").click(function() {
+                // $("#top_export_button_id").click(); // hides the form on submit
+
+                start_date = $("#start_date_select").datepicker('getDate');
+                end_date = $("#end_date_select").datepicker('getDate');
+
+                // Format the dates as needed by the back-end.
+                $("#start_date_select").val($.datepicker.formatDate('yy-mm-dd', start_date));
+                $("#end_date_select").val($.datepicker.formatDate('yy-mm-dd', end_date));
+
+                $("#date_picker_form").submit()
+            });
+
+            $('.sparklines').sparkline('html', { enableTagOptions: true, disableInteraction: true });
+
+        });
+    </script>
+    <script type="text/javascript" src="{% static 'js/control_panel/facility_management.js' %}"></script>
+{% endblock headjs %}
+
+{% block buttons %}{{ block.super }}
+    <li>
+        <button class="btn btn-success" data-toggle="modal" data-target="export_csv_div_id" id="top_export_button_id" value="{% trans 'Export student stats' %}">{% trans 'Export student stats' %}</button>
+    </li>
+    <div id="export_csv_div_id" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">{% trans "Export student stats" %}</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form" method="post" action="?format=csv" id="date_picker_form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="date">
+                                {% trans "Start Date" %}:
+                            </label>
+                            <input class="export_csv_input" name="period_start" id="start_date_select" type="text" value=""></input><br/>
+                        </div>
+                        <div class="form-group">
+                            <label class="date">
+                                {% trans "End Date" %}:
+                            </label>
+                            <input class="export_csv_input" name="period_end" id="end_date_select" type="text" value=""></input><br/>
+                        </div>
+                        <div class="form-group">
+                            <input type="button" class="btn btn-success" id="CSV_EXPORT" title="{% trans "User report for the previous month" %}" value="{% trans "Export to CSV" %}" /></input>
+                        </div>
+                    </form>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+{% endblock buttons %}
+
+{% block control_panel_content %}
+    <div class="container">
+        {# Coaches table #}
+        {% include "control_panel/partials/_coaches_table.html" %}
+
+        {# Groups table #}
+        {% include "control_panel/partials/_groups_table.html" %}
+
+        {# Students table #}
+        {% include "control_panel/partials/_students_table.html" %}
+    </div> <!-- End Container -->
+{% endblock control_panel_content %}

@@ -1,0 +1,53 @@
+{% extends "control_panel/base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+{% load include_block %}
+
+{% block title %}{{ zone.name }} - {% trans "Sharing Network Management Console" %} {{ block.super }}{% endblock title %}
+
+{% block users_active %}active{% endblock users_active %}
+{% block manage_active %}active{% endblock manage_active %}
+{% block facility_active %}facility-active active-tab active-nav{% endblock facility_active %}
+
+{% block headcss %}{{ block.super }}
+    {% if clock_set %}
+        {% include_block "control_panel/snippets/clock_set.html" "headcss" %}
+    {% endif %}
+    <style>
+        .help-tooltip {
+            position: relative;
+            top: -5px;
+        }
+    </style>
+{% endblock headcss %}
+
+{% block headjs %}{{ block.super }}
+    {% if clock_set %}
+        {% include_block "control_panel/snippets/clock_set.html" "headjs" %}
+    {% endif %}
+    <script type="text/javascript" src="{% static 'js/control_panel/zone_management.js' %}"></script>
+{% endblock headjs %}
+
+{% block buttons %}
+            {% block upload_button %}
+            {% endblock upload_button %}
+
+            {% block download_button %}
+                <!--li>
+                    <a class="btn btn-success" href="#">{% trans "Sync via USB" %}</a>
+                </li-->
+            {% endblock download_button %}
+            <a href="{% url 'data_export' %}{% if zone_id != "None" %}?zone_id={{ zone_id }}{% endif %}" class="btn btn-success">{% trans "Export Data" %}</a>
+{% endblock buttons %}
+
+{% block control_panel_content %}
+
+<div class="container">
+    {# Facilities Section #}
+    {% include "control_panel/partials/_facility_table.html" %}
+
+    {# Device Section #}
+    {% include "control_panel/partials/_device_table.html" %}
+</div>
+
+{% endblock control_panel_content %}
