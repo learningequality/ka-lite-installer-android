@@ -14,6 +14,36 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.logger import Logger
 
+# webview stuff
+from jnius import autoclass
+from kivy.lang import Builder                                                                   
+from kivy.utils import platform                                                                 
+from kivy.uix.widget import Widget
+from android.runnable import run_on_ui_thread
+
+WebView = autoclass('android.webkit.WebView')                                                   
+WebViewClient = autoclass('android.webkit.WebViewClient')
+WebChromeClient = autoclass('android.webkit.WebChromeClient')                                       
+activity = autoclass('org.renpy.android.PythonActivity').mActivity
+
+class Wv(Widget):                                                                               
+    def __init__(self, **kwargs):                                                               
+        super(Wv, self).__init__(**kwargs)                                                      
+        Clock.schedule_once(self.create_webview, 0)                                             
+
+    @run_on_ui_thread                                                                           
+    def create_webview(self, *args):                                                            
+        webview = WebView(activity)                                                             
+        webview.getSettings().setJavaScriptEnabled(True)     
+        webview.getSettings().setPluginsEnabled(True)                                   
+        wvc = WebViewClient()
+        wcc = WebChromeClient()                                                           
+        webview.setWebViewClient(wvc) 
+        webview.setWebChromeClient(wcc)                                                      
+        activity.setContentView(webview)                                                        
+        webview.loadUrl('http://0.0.0.0:8024')
+# webview stuff
+
 import logging
 logging.root = Logger
 
@@ -111,22 +141,20 @@ class ServerThread(threading.Thread, Server):
                         pj(self.project_dir, 'ka-lite'))
         sys.path.insert(1, pj(self.project_dir, 'ka-lite/python-packages'))
         os.chdir(pj(self.project_dir, 'ka-lite', 'kalite'))
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'kalite.settings')
         self.settings = __import__('settings')
         self.execute_manager = __import__(
             'django.core.management',
             fromlist=('execute_manager',)).execute_manager
 
     def syncdb(self):
-        self.execute_manager(self.settings, ['manage.py', 'syncdb',
-                                         '--noinput'])
-        self.execute_manager(self.settings, ['manage.py', 'migrate',
-                                         '--merge'])
+        self.execute_manager(self.settings, ['manage.py', 'syncdb', '--noinput'])
+        self.execute_manager(self.settings, ['manage.py', 'migrate', '--merge'])
 
     def generate_keys(self):
-        from config.models import Settings
-        if Settings.get('private_key'):
-            return 'key exists'
+        #from config.models import Settings
+        #if Settings.get('private_key'):
+        #    return 'key exists'
         self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
 
     def create_superuser(self):
@@ -158,7 +186,7 @@ class ServerThread(threading.Thread, Server):
             return 'fail'
 
         result = 'fail'
-        for i in range(5):
+        for i in range(30):
             if self.server_is_running:
                 result = 'OK'
                 break
@@ -207,6 +235,7 @@ class KALiteApp(App):
         self.messages = BoxLayout(orientation='vertical')
         self.layout.add_widget(self.messages)
         self.layout.add_widget(self.server_box)
+        #self.layout.add_widget(Wv())
         return self.layout
 
     def on_start(self):
@@ -250,6 +279,9 @@ class KALiteApp(App):
                                                     self.server_port)
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description)
+
+    def start_webview(self):
+        self.layout.add_widget(Wv()) # webview stuff
 
     def stop_server(self):
         if self.kalite.server_is_running:

@@ -64,7 +64,7 @@
   </exec>
   <!-- include sqlite3, wsgiref, csv, unittest modules -->
   <replaceregexp file="python-for-android/dist/default/blacklist.txt"
-                 match="(^.*wsgiref.*$)|(^.*(sqlite3).*$)|(^.*(_csv).*$)|(^.*(unittest).*$)"
+                 match="(^.*wsgiref.*$)|(^.*(sqlite3).*$)|(^.*(_csv).*$)|(^.*(unittest).*$)|(^.*(multiprocessing).*$)|(^.*(thread).*$)|(^.*(a).*$)|(^.*(e).*$)|(^.*(o).*$)|(^.*(s).*$)|(^.*(t).*$)|(^.*(h).*$)|(^.*(d).*$)"
                  replace="#"
                  byline="true" />
 </target>
@@ -83,9 +83,7 @@
        all the .py files (including Django and other KA Lite python-packages/),
        that may lead to strange errors when running this code on Android.
        Zipping serves as a protection for .py files. -->
-  <exec executable="git" failonerror="true">
-    <arg line="clone --recursive https://github.com/learningequality/ka-lite.git" />
-  </exec>
+
   <!-- remove self-referencing symbolic link, that could break things -->
   <delete file="ka-lite/kalite/faq/faq" />
   <!-- copy in our local_settings.py file that disables caching, reduces the number of threads, etc -->

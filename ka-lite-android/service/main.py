@@ -49,7 +49,7 @@ class KALiteServer(object):
                     full_path += part + "/"
                     if not os.path.exists(full_path):
                         os.makedirs(full_path)
-        from utils import general
+        from fle_utils import general
         general.ensure_dir  = ensure_dir
 
 
@@ -76,13 +76,20 @@ class KALiteServer(object):
         self.setup_chronograph()
         try:
             if os.fork() == 0:
-                self.redirect_output()
+                #self.redirect_output()
+                # self.execute_manager(self.settings, [
+                #         'manage.py', 'runcherrypyserver',
+                #         "host={}".format(self.app.server_host),
+                #         "port={}".format(self.app.server_port),
+                #         "pidfile={}".format(self.pid_file),
+                #         'daemonize=True',
+                #         'threads=3'])
                 self.execute_manager(self.settings, [
-                        'manage.py', 'runcherrypyserver',
+                        'manage.py', 'kaserve',
                         "host={}".format(self.app.server_host),
-                        "port={}".format(self.app.server_port),
                         "pidfile={}".format(self.pid_file),
-                        'daemonize=True',
+                        'daemonize=true',
+                        'production=true',
                         'threads=3'])
                 sys.exit(0)
         except OSError, e:
@@ -145,9 +152,10 @@ class AndroidServer(KALiteServer):
         project_dir = os.path.dirname(os.path.abspath(
                 pj(__main__.__file__, '..')))
         sys.path.insert(1, pj(project_dir, 'ka-lite/kalite'))
+        sys.path.insert(1, pj(project_dir, 'ka-lite'))
         sys.path.insert(1, pj(project_dir, 'ka-lite/python-packages'))
         os.chdir(pj(project_dir, 'ka-lite', 'kalite'))
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'kalite.settings')
 
         self.setup_chronograph()
 
