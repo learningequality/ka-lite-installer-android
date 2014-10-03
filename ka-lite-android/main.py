@@ -157,8 +157,8 @@ class ServerThread(threading.Thread, Server):
         return 'server is running' if self.server_is_running else (
             'server is stopped')
 
-    def start_server(self):
-        if super(ServerThread, self).start_server() == 'fail':
+    def start_server(self, threadnum):
+        if super(ServerThread, self).start_server(threadnum) == 'fail':
             return 'fail'
 
         result = 'fail'
@@ -206,24 +206,29 @@ class KALiteApp(App):
     server_port = '8024'
 
     progress_bar = None
+    textinput = None
 
     a = 0
     serverStop = False
+    ThreadNum = 'threads=3'
 
     def build(self):
+        self.textinput = TextInput(multiline=False, 
+            hint_text="Enter number of threads here:")
         self.progress_bar = ProgressBar()
         self.layout = AppLayout()
         self.server_box = BoxLayout(orientation='horizontal')
         self.messages = BoxLayout(orientation='vertical')
         self.layout.add_widget(self.messages)
+        self.layout.add_widget(self.textinput)
         self.layout.add_widget(self.server_box)
         self.layout.add_widget(self.progress_bar)
         return self.layout
 
     def on_start(self):
         self.kalite = ServerThread(self)
-        self.prepare_server()
-        self.kalite.start()
+        # self.prepare_server()
+        # self.kalite.start()
 
     def on_pause(self):
         return True
@@ -232,6 +237,11 @@ class KALiteApp(App):
         if self.kalite.is_alive():
             self.kalite.schedule('stop_thread')
             self.kalite.join()
+
+    def getThreadNum(self):
+        self.ThreadNum = 'threads=' + self.textinput.text
+        self.prepare_server()
+        self.kalite.start()
 
     @clock_callback
     def report_activity(self, activity, message):
@@ -254,7 +264,7 @@ class KALiteApp(App):
 
             if self.a >= 97 and message == 'server is stopped':
                 self.serverStop = True
-                self.start_server()
+                self.start_server(self.ThreadNum)
 
             if self.a >= 97 and message == 'server is running':
                 anim.bind(on_complete = self.start_webview)
@@ -276,12 +286,12 @@ class KALiteApp(App):
         schedule('create_superuser', 'Creating admin user')
         schedule('check_server', 'Checking server status')
 
-    def start_server(self):
+    def start_server(self, threadnum):
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
                                                     self.server_port)
         if not self.kalite.server_is_running:
-            self.kalite.schedule('start_server', description)
+            self.kalite.schedule('start_server', description, threadnum)
 
     def start_webview(self, instance, widget):
         url = 'http://0.0.0.0:8024/'
@@ -304,7 +314,7 @@ class KALiteApp(App):
         from android import AndroidService
         self.service = AndroidService('KA Lite', 'server is running')
         # start executing service/main.py as a service
-        self.service.start(':'.join((self.server_host, self.server_port)))
+        self.service.start(':'.join((self.server_host, self.server_port, self.ThreadNum)))
 
     @clock_callback
     def stop_service_part(self):

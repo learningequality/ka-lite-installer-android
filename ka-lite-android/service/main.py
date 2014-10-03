@@ -72,7 +72,7 @@ class KALiteServer(object):
                 return self.start_wsgiserver(*args, **kwargs)
             cherrypy.quickstart = monkey_start_server
 
-    def start_server(self):
+    def start_server(self, threadnum):
         self.setup_chronograph()
         try:
             if os.fork() == 0:
@@ -83,7 +83,7 @@ class KALiteServer(object):
                         "port={}".format(self.app.server_port),
                         "pidfile={}".format(self.pid_file),
                         'daemonize=True',
-                        'threads=3'])
+                        threadnum])
                 # self.execute_manager(self.settings, [
                 #         'manage.py', 'kaserve',
                 #         "host={}".format(self.app.server_host),
@@ -147,7 +147,7 @@ class AndroidServer(KALiteServer):
             return False
         return True
 
-    def _start_server(self, host, port):
+    def _start_server(self, host, port, threadnum):
         import __main__
         project_dir = os.path.dirname(os.path.abspath(
                 pj(__main__.__file__, '..')))
@@ -166,7 +166,7 @@ class AndroidServer(KALiteServer):
                 "host={}".format(host),
                 "port={}".format(port),
                 'daemonize=False',
-                'threads=3'])
+                threadnum])
 
 
 if platform() == 'android':
