@@ -14,47 +14,23 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.logger import Logger
 
-# webview stuff
-from jnius import autoclass
-from kivy.lang import Builder                                                                   
-from kivy.utils import platform                                                                 
-from kivy.uix.widget import Widget
-from android.runnable import run_on_ui_thread
-
-WebView = autoclass('android.webkit.WebView')                                                   
-WebViewClient = autoclass('android.webkit.WebViewClient')
-WebChromeClient = autoclass('android.webkit.WebChromeClient')                                       
-activity = autoclass('org.renpy.android.PythonActivity').mActivity
-
-class Wv(Widget):                                                                               
-    def __init__(self, **kwargs):                                                               
-        super(Wv, self).__init__(**kwargs)                                                      
-        Clock.schedule_once(self.create_webview, 0)                                             
-
-    @run_on_ui_thread                                                                           
-    def create_webview(self, *args):                                                            
-        webview = WebView(activity)                                                             
-        webview.getSettings().setJavaScriptEnabled(True)     
-        webview.getSettings().setPluginsEnabled(True)                                   
-        wvc = WebViewClient()
-        wcc = WebChromeClient()                                                           
-        webview.setWebViewClient(wvc) 
-        webview.setWebChromeClient(wcc)                                                      
-        activity.setContentView(webview)                                                        
-        webview.loadUrl('http://0.0.0.0:8024')
-# webview stuff
-
 import logging
 logging.root = Logger
 
 from service.main import Server
+
+import webbrowser
+from kivy.uix.progressbar import ProgressBar
+from kivy.animation import Animation
+from kivy.uix.textinput import TextInput
+# import pdb
+# pdb.set_trace()
 
 class AppLayout(GridLayout):
     pass
 
 
 class ServerThread(threading.Thread, Server):
-
     def __init__(self, app):
         super(ServerThread, self).__init__()
 
@@ -229,13 +205,19 @@ class KALiteApp(App):
     # to avoid messing with other KA Lite installations
     server_port = '8024'
 
+    progress_bar = None
+
+    a = 0
+    serverStop = False
+
     def build(self):
+        self.progress_bar = ProgressBar()
         self.layout = AppLayout()
         self.server_box = BoxLayout(orientation='horizontal')
         self.messages = BoxLayout(orientation='vertical')
         self.layout.add_widget(self.messages)
         self.layout.add_widget(self.server_box)
-        #self.layout.add_widget(Wv())
+        self.layout.add_widget(self.progress_bar)
         return self.layout
 
     def on_start(self):
@@ -257,8 +239,29 @@ class KALiteApp(App):
         if activity == 'start':
             self.activity_label = Label(text="{0} ... ".format(message))
             self.messages.add_widget(self.activity_label)
+
+            self.a += 6.25
+            anim = Animation(value = self.a, duration = 1)
+            anim.start(self.progress_bar)
+
         elif hasattr(self, 'activity_label'):
             self.activity_label.text = self.activity_label.text + message
+
+            self.a += 6.25
+            anim = Animation(value = self.a, duration = 1)
+            anim.start(self.progress_bar)
+
+
+            if self.a >= 97 and message == 'server is stopped':
+                self.serverStop = True
+                self.start_server()
+
+            if self.a >= 97 and message == 'server is running':
+                anim.bind(on_complete = self.start_webview)
+
+            if self.serverStop and message == 'OK':
+                self.serverStop = False
+                self.start_webview_button()
 
     def prepare_server(self):
         '''Schedule preparation steps to be executed in the server thread'''
@@ -280,8 +283,17 @@ class KALiteApp(App):
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description)
 
-    def start_webview(self):
-        self.layout.add_widget(Wv()) # webview stuff
+    def start_webview(self, instance, widget):
+        url = 'http://0.0.0.0:8024/'
+        webbrowser.open(url)
+
+    def start_webview_button(self):
+        url = 'http://0.0.0.0:8024/'
+        webbrowser.open(url)
+
+    def quit_app(self):
+        self.stop_server()
+        App.get_running_app().stop()
 
     def stop_server(self):
         if self.kalite.server_is_running:

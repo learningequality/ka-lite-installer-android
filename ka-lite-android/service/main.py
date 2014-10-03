@@ -76,21 +76,21 @@ class KALiteServer(object):
         self.setup_chronograph()
         try:
             if os.fork() == 0:
-                #self.redirect_output()
-                # self.execute_manager(self.settings, [
-                #         'manage.py', 'runcherrypyserver',
-                #         "host={}".format(self.app.server_host),
-                #         "port={}".format(self.app.server_port),
-                #         "pidfile={}".format(self.pid_file),
-                #         'daemonize=True',
-                #         'threads=3'])
+                self.redirect_output()
                 self.execute_manager(self.settings, [
-                        'manage.py', 'kaserve',
+                        'manage.py', 'runcherrypyserver',
                         "host={}".format(self.app.server_host),
+                        "port={}".format(self.app.server_port),
                         "pidfile={}".format(self.pid_file),
-                        'daemonize=true',
-                        'production=true',
+                        'daemonize=True',
                         'threads=3'])
+                # self.execute_manager(self.settings, [
+                #         'manage.py', 'kaserve',
+                #         "host={}".format(self.app.server_host),
+                #         "pidfile={}".format(self.pid_file),
+                #         'daemonize=true',
+                #         'production=true',
+                #         'threads=3'])
                 sys.exit(0)
         except OSError, e:
             Logger.exception("Fork error: {type}{args}".format(type=type(e),
