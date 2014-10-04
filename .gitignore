@@ -26,7 +26,6 @@ local.properties
 *.sublime-workspace
 
 # submodules
-ka-lite
 python-for-android
 
 log.txt

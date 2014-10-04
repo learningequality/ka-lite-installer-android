@@ -1,0 +1,3 @@
+[submodule "ka-lite"]
+	path = ka-lite
+	url = https://github.com/learningequality/ka-lite.git
