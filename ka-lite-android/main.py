@@ -203,7 +203,7 @@ class KALiteApp(App):
     server_host = '0.0.0.0'
     # choose a non-default port,
     # to avoid messing with other KA Lite installations
-    server_port = '8024'
+    server_port = '8008'
 
     progress_bar = None
     textinput = None
@@ -289,16 +289,16 @@ class KALiteApp(App):
     def start_server(self, threadnum):
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
-                                                    self.server_port, self.ThreadNum)
+                                                    self.server_port, threadnum)
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description, threadnum)
 
     def start_webview(self, instance, widget):
-        url = 'http://0.0.0.0:8024/'
+        url = 'http://0.0.0.0:8008/'
         webbrowser.open(url)
 
     def start_webview_button(self):
-        url = 'http://0.0.0.0:8024/'
+        url = 'http://0.0.0.0:8008/'
         webbrowser.open(url)
 
     def quit_app(self):
@@ -310,11 +310,11 @@ class KALiteApp(App):
             self.kalite.schedule('stop_server', 'Stop server')
 
     @clock_callback
-    def start_service_part(self):
+    def start_service_part(self, threadnum):
         from android import AndroidService
         self.service = AndroidService('KA Lite', 'server is running')
         # start executing service/main.py as a service
-        self.service.start(':'.join((self.server_host, self.server_port, self.ThreadNum)))
+        self.service.start(':'.join((self.server_host, self.server_port, threadnum)))
 
     @clock_callback
     def stop_service_part(self):

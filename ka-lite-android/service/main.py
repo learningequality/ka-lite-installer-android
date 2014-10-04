@@ -132,8 +132,8 @@ class KALiteServer(object):
 
 class AndroidServer(KALiteServer):
 
-    def start_server(self):
-        self.app.start_service_part()
+    def start_server(self, threadnum):
+        self.app.start_service_part(threadnum)
 
     def stop_server(self):
         self.app.stop_service_part()
