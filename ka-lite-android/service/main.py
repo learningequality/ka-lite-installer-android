@@ -49,7 +49,7 @@ class KALiteServer(object):
                     full_path += part + "/"
                     if not os.path.exists(full_path):
                         os.makedirs(full_path)
-        from utils import general
+        from fle_utils import general
         general.ensure_dir  = ensure_dir
 
 
@@ -72,18 +72,25 @@ class KALiteServer(object):
                 return self.start_wsgiserver(*args, **kwargs)
             cherrypy.quickstart = monkey_start_server
 
-    def start_server(self):
+    def start_server(self, threadnum):
         self.setup_chronograph()
         try:
             if os.fork() == 0:
-                self.redirect_output()
+                #self.redirect_output()
                 self.execute_manager(self.settings, [
                         'manage.py', 'runcherrypyserver',
                         "host={}".format(self.app.server_host),
                         "port={}".format(self.app.server_port),
                         "pidfile={}".format(self.pid_file),
                         'daemonize=True',
-                        'threads=3'])
+                        threadnum])
+                # self.execute_manager(self.settings, [
+                #         'manage.py', 'kaserve',
+                #         "host={}".format(self.app.server_host),
+                #         "pidfile={}".format(self.pid_file),
+                #         'daemonize=true',
+                #         'production=true',
+                #         'threads=3'])
                 sys.exit(0)
         except OSError, e:
             Logger.exception("Fork error: {type}{args}".format(type=type(e),
@@ -140,14 +147,15 @@ class AndroidServer(KALiteServer):
             return False
         return True
 
-    def _start_server(self, host, port):
+    def _start_server(self, host, port, threadnum):
         import __main__
         project_dir = os.path.dirname(os.path.abspath(
                 pj(__main__.__file__, '..')))
         sys.path.insert(1, pj(project_dir, 'ka-lite/kalite'))
+        sys.path.insert(1, pj(project_dir, 'ka-lite'))
         sys.path.insert(1, pj(project_dir, 'ka-lite/python-packages'))
         os.chdir(pj(project_dir, 'ka-lite', 'kalite'))
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'kalite.settings')
 
         self.setup_chronograph()
 
@@ -158,7 +166,7 @@ class AndroidServer(KALiteServer):
                 "host={}".format(host),
                 "port={}".format(port),
                 'daemonize=False',
-                'threads=3'])
+                threadnum])
 
 
 if platform() == 'android':
@@ -170,5 +178,5 @@ else:
 if __name__ == '__main__':
     # executed by the service part
     if platform() == 'android':
-        host, port = os.getenv('PYTHON_SERVICE_ARGUMENT').split(':')
-        AndroidServer()._start_server(host, port)
+        host, port, ThreadNum = os.getenv('PYTHON_SERVICE_ARGUMENT').split(':')
+        AndroidServer()._start_server(host, port, ThreadNum)
