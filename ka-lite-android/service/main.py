@@ -178,5 +178,5 @@ else:
 if __name__ == '__main__':
     # executed by the service part
     if platform() == 'android':
-        host, port = os.getenv('PYTHON_SERVICE_ARGUMENT').split(':')
-        AndroidServer()._start_server(host, port)
+        host, port, ThreadNum = os.getenv('PYTHON_SERVICE_ARGUMENT').split(':')
+        AndroidServer()._start_server(host, port, ThreadNum)
