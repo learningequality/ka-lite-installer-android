@@ -76,7 +76,7 @@ class KALiteServer(object):
         self.setup_chronograph()
         try:
             if os.fork() == 0:
-                self.redirect_output()
+                #self.redirect_output()
                 self.execute_manager(self.settings, [
                         'manage.py', 'runcherrypyserver',
                         "host={}".format(self.app.server_host),

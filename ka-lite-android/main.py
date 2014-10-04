@@ -289,7 +289,7 @@ class KALiteApp(App):
     def start_server(self, threadnum):
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
-                                                    self.server_port)
+                                                    self.server_port, self.ThreadNum)
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description, threadnum)
 
