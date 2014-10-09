@@ -148,6 +148,10 @@ class AndroidServer(KALiteServer):
         return True
 
     def _start_server(self, host, port, threadnum):
+
+        tmp_dir = kivy.kivy_home_dir
+        pid_file = os.path.join(tmp_dir, 'wsgiserver.pid')
+
         import __main__
         project_dir = os.path.dirname(os.path.abspath(
                 pj(__main__.__file__, '..')))
@@ -165,7 +169,8 @@ class AndroidServer(KALiteServer):
                 'manage.py', 'runcherrypyserver',
                 "host={}".format(host),
                 "port={}".format(port),
-                'daemonize=False',
+                "pidfile={}".format(pid_file),
+                'daemonize=True',
                 threadnum])
 
 
@@ -177,6 +182,7 @@ else:
 
 if __name__ == '__main__':
     # executed by the service part
+
     if platform() == 'android':
         host, port, ThreadNum = os.getenv('PYTHON_SERVICE_ARGUMENT').split(':')
         AndroidServer()._start_server(host, port, ThreadNum)
