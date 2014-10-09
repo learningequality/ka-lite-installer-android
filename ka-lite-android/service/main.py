@@ -169,8 +169,9 @@ class AndroidServer(KALiteServer):
                 'manage.py', 'runcherrypyserver',
                 "host={}".format(host),
                 "port={}".format(port),
-                "pidfile={}".format(pid_file),
-                'daemonize=True',
+                # "pidfile={}".format(pid_file),
+                # 'daemonize=True',
+                'daemonize=False',
                 threadnum])
 
 

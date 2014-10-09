@@ -180,7 +180,7 @@ class ServerThread(threading.Thread, Server):
     def stop_server(self):
         super(ServerThread, self).stop_server()
         result = 'fail'
-        for i in range(5):
+        for i in range(30):
             if not self.server_is_running:
                 result = 'OK'
                 break
@@ -374,6 +374,7 @@ class KALiteApp(App):
         schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
+        self.ThreadNum = 'threads=' + self.textinput.text
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
                                                     self.server_port, threadnum)
