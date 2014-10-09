@@ -6,6 +6,8 @@ from zipfile import ZipFile
 import threading
 import Queue
 import kivy
+from kivy.core.window import Window
+Window.clearcolor = (1, 1, 1, 1)
 kivy.require('1.0.7')
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -23,6 +25,9 @@ import webbrowser
 from kivy.uix.progressbar import ProgressBar
 from kivy.animation import Animation
 from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.image import Image
+from kivy.graphics import Color, Rectangle
 # import pdb
 # pdb.set_trace()
 
@@ -198,6 +203,19 @@ def clock_callback(f):
     return wrapper
 
 
+class _BoxLayout(BoxLayout):
+    def __init__(self, **kwargs):
+        super(_BoxLayout, self).__init__(**kwargs)
+        with self.canvas.before:
+            Color(0.878, 0.941, 0.784)
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+        self.bind(size=self._update_rect, pos=self._update_rect)
+
+    def _update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+
+
 class KALiteApp(App):
 
     server_host = '0.0.0.0'
@@ -210,19 +228,81 @@ class KALiteApp(App):
 
     a = 0
     serverStop = False
-    ThreadNum = 'threads=3'
+    ThreadNum = None
+    gif_img = None
 
     def build(self):
+        self.layout = AppLayout()
+
+        logohoulder = _BoxLayout(orientation='horizontal')
+        log_img = Image(source='horizontal-logo.png')
+        #log_img.pos_hint={'x': 0, 'center_y': .5}
+        logohoulder.padding = [20,10,Window.width-250,0]
+        logohoulder.add_widget(log_img)
+
+        self.layout.add_widget(logohoulder)
+
+        #create BubbleButtons
+        my_bub_btn1= Button(text='OpenBrowser', font_size=30
+            , color=(0.14, 0.23, 0.25, 1), bold=True)
+        my_bub_btn1.background_normal='green_button_up.png'
+        my_bub_btn1.bind(on_press=self.start_webview_bubblebutton)
+
+        my_bub_btn2= Button(text='Exit', font_size=30
+            , color=(0.14, 0.23, 0.25, 1), bold=True)
+        my_bub_btn2.background_normal='green_button_up.png'
+        my_bub_btn2.bind(on_press=self.quit_app)
+
+        my_bub_btn3= Button(text='thread', font_size=30
+            , color=(0.14, 0.23, 0.25, 1), bold=True)
+        my_bub_btn3.background_normal='green_button_up.png'
+        my_bub_btn3.bind(on_press=self.getThreadNum)
+
+        my_bub_btn4= Button(text='StopServer', font_size=30
+            , color=(0.14, 0.23, 0.25, 1), bold=True)
+        my_bub_btn4.background_normal='green_button_up.png'
+        my_bub_btn4.bind(on_press=self.stop_server)
+
+        my_bub_btn5= Button(text='StartServer', font_size=30
+            , color=(0.14, 0.23, 0.25, 1), bold=True)
+        my_bub_btn5.background_normal='green_button_up.png'
+        my_bub_btn5.bind(on_press=self.start_server)
+
+
+        buttonsholder = _BoxLayout(orientation='horizontal')
+        buttonsholder.padding = [10,0,10,0]
+        buttonsholder.add_widget(my_bub_btn1)
+        buttonsholder.add_widget(my_bub_btn2)
+        buttonsholder.add_widget(my_bub_btn3)
+        buttonsholder.add_widget(my_bub_btn4)
+        buttonsholder.add_widget(my_bub_btn5)
+
+        self.layout.add_widget(buttonsholder)
+
+        #image stuff
+        self.img_holder = BoxLayout(orientation='vertical', size=(200,200), size_hint=(1, None))
+        self.img_holder.padding = [0,80,0,10]
+        self.layout.add_widget(self.img_holder)
+
+        #thread input box
+        textinputholder = BoxLayout(orientation='horizontal')
+        textinputholder.padding = [200,10,200,10]
+
         self.textinput = TextInput(multiline=False, 
             hint_text="Enter number of threads here:")
+        self.textinput.padding = [10,10,10,10]
+        textinputholder.add_widget(self.textinput)
+
         self.progress_bar = ProgressBar()
-        self.layout = AppLayout()
+        
         self.server_box = BoxLayout(orientation='horizontal')
         self.messages = BoxLayout(orientation='vertical')
+
         self.layout.add_widget(self.messages)
-        self.layout.add_widget(self.textinput)
         self.layout.add_widget(self.server_box)
+        self.layout.add_widget(textinputholder)
         self.layout.add_widget(self.progress_bar)
+
         return self.layout
 
     def on_start(self):
@@ -238,7 +318,10 @@ class KALiteApp(App):
             self.kalite.schedule('stop_thread')
             self.kalite.join()
 
-    def getThreadNum(self):
+    def getThreadNum(self, widget):
+        self.gif_img = Image(source='loading.zip',  anim_delay = 0.15)
+        self.img_holder.add_widget(self.gif_img)
+
         self.ThreadNum = 'threads=' + self.textinput.text
         self.prepare_server()
         self.kalite.start()
@@ -247,7 +330,9 @@ class KALiteApp(App):
     def report_activity(self, activity, message):
         assert activity in ('start', 'result')
         if activity == 'start':
-            self.activity_label = Label(text="{0} ... ".format(message))
+            if hasattr(self, 'activity_label'):
+                self.messages.remove_widget(self.activity_label)
+            self.activity_label = Label(text="{0} ... ".format(message), color=(0.14, 0.23, 0.25, 1))
             self.messages.add_widget(self.activity_label)
 
             self.a += 6.25
@@ -268,10 +353,12 @@ class KALiteApp(App):
 
             if self.a >= 97 and message == 'server is running':
                 anim.bind(on_complete = self.start_webview)
+                self.img_holder.remove_widget(self.gif_img)
 
             if self.serverStop and message == 'OK':
                 self.serverStop = False
                 self.start_webview_button()
+                self.img_holder.remove_widget(self.gif_img)
 
     def prepare_server(self):
         '''Schedule preparation steps to be executed in the server thread'''
@@ -301,11 +388,15 @@ class KALiteApp(App):
         url = 'http://0.0.0.0:8008/'
         webbrowser.open(url)
 
-    def quit_app(self):
-        self.stop_server()
+    def start_webview_bubblebutton(self, widget):
+        url = 'http://0.0.0.0:8008/'
+        webbrowser.open(url)
+
+    def quit_app(self, widget):
+        self.stop_server(widget)
         App.get_running_app().stop()
 
-    def stop_server(self):
+    def stop_server(self, widget):
         if self.kalite.server_is_running:
             self.kalite.schedule('stop_server', 'Stop server')
 
@@ -314,7 +405,7 @@ class KALiteApp(App):
         from android import AndroidService
         self.service = AndroidService('KA Lite', 'server is running')
         # start executing service/main.py as a service
-        self.service.start(':'.join((self.server_host, self.server_port, threadnum)))
+        self.service.start(':'.join((self.server_host, self.server_port, self.ThreadNum)))
 
     @clock_callback
     def stop_service_part(self):
