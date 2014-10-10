@@ -29,7 +29,7 @@ You also want to ensure you have ia32-libs installed. If you are running Ubuntu 
 	rm /etc/apt/sources.list.d/ia32-libs-raring.list
 	apt-get update
 	exit
-	sudo apt-get install gcc-multilib
+    sudo apt-get install gcc-multilib openjdk-7-jdk
 
 Build
 -----
