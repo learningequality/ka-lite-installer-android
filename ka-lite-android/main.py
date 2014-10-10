@@ -7,7 +7,6 @@ import threading
 import Queue
 import kivy
 kivy.require('1.0.7')
-from kivy.uix.gridlayout import GridLayout
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.clock import Clock
@@ -24,10 +23,6 @@ import webbrowser
 
 # import pdb
 # pdb.set_trace()
-
-class AppLayout(GridLayout):
-    pass
-
 
 class ServerThread(threading.Thread, Server):
     def __init__(self, app):
@@ -203,17 +198,14 @@ class KALiteApp(App):
     # to avoid messing with other KA Lite installations
     server_port = '8008'
 
-    a = 0
-    serverStop = False
-    ThreadNum = None
+    progress_tracking = 0
+    server_state = False
+    thread_num = None
 
     def build(self):
-        self.layout = AppLayout()
+        self.main_ui = KaliteUI(self)
 
-        self.mainUI = KaliteUI()
-        self.mainUI.constructor(self.layout, self)
-
-        return self.layout
+        return self.main_ui.get_root_Layout()
 
     def on_start(self):
         self.kalite = ServerThread(self)
@@ -228,10 +220,10 @@ class KALiteApp(App):
             self.kalite.schedule('stop_thread')
             self.kalite.join()
 
-    def getThreadNum(self, widget):
-        self.mainUI.addLoadingGif()
+    def set_thread_num(self, widget):
+        self.main_ui.add_loading_gif()
 
-        self.ThreadNum = self.mainUI.getThreadNum()
+        self.thread_num = self.main_ui.get_thread_num()
         self.prepare_server()
         self.kalite.start()
 
@@ -240,32 +232,32 @@ class KALiteApp(App):
         assert activity in ('start', 'result')
         if activity == 'start':
             if hasattr(self, 'activity_label'):
-                self.mainUI.removeMessages(self.activity_label)
+                self.main_ui.remove_messages(self.activity_label)
             self.activity_label = Label(text="{0} ... ".format(message), color=(0.14, 0.23, 0.25, 1))
-            self.mainUI.addMessages(self.activity_label)
+            self.main_ui.add_messages(self.activity_label)
 
-            self.a += 6.25
-            self.mainUI.startProgressBar(self.a)
+            self.progress_tracking += 6.25
+            self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
             self.activity_label.text = self.activity_label.text + message
 
-            self.a += 6.25
-            self.mainUI.startProgressBar(self.a)
+            self.progress_tracking += 6.25
+            self.main_ui.start_progress_bar(self.progress_tracking)
 
 
-            if self.a >= 97 and message == 'server is stopped':
-                self.serverStop = True
-                self.start_server(self.ThreadNum)
+            if self.progress_tracking >= 97 and message == 'server is stopped':
+                self.server_state = True
+                self.start_server(self.thread_num)
 
-            if self.a >= 97 and message == 'server is running':
-                self.mainUI.animationBind(self.start_webview)
-                self.mainUI.removeLoadingGif()
+            if self.progress_tracking >= 97 and message == 'server is running':
+                self.main_ui.animation_bind(self.start_webview)
+                self.main_ui.remove_loading_gif()
 
-            if self.serverStop and message == 'OK':
-                self.serverStop = False
+            if self.server_state and message == 'OK':
+                self.server_state = False
                 self.start_webview_button()
-                self.mainUI.removeLoadingGif()
+                self.main_ui.remove_loading_gif()
 
     def prepare_server(self):
         '''Schedule preparation steps to be executed in the server thread'''
@@ -281,7 +273,7 @@ class KALiteApp(App):
         schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
-        self.ThreadNum = self.mainUI.getThreadNum()
+        self.thread_num = self.main_ui.get_thread_num()
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
                                                     self.server_port, threadnum)
@@ -313,7 +305,7 @@ class KALiteApp(App):
         from android import AndroidService
         self.service = AndroidService('KA Lite', 'server is running')
         # start executing service/main.py as a service
-        self.service.start(':'.join((self.server_host, self.server_port, self.ThreadNum)))
+        self.service.start(':'.join((self.server_host, self.server_port, self.thread_num)))
 
     @clock_callback
     def stop_service_part(self):

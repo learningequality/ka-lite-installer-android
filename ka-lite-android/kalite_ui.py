@@ -6,6 +6,7 @@ from kivy.uix.image import Image
 from kivy.graphics import Color, Rectangle
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.core.window import Window
 Window.clearcolor = (1, 1, 1, 1)
 
@@ -22,14 +23,15 @@ class _BoxLayout(BoxLayout):
 		self.rect.size = instance.size
 
 class KaliteUI(object):
-	def constructor(self, appLayout, kaliteApp):
-		logohoulder = _BoxLayout(orientation='horizontal')
+	def __init__(self, kaliteApp):
+		self.root_layout = GridLayout(cols=1)
+		logo_houlder = _BoxLayout(orientation='horizontal')
 		log_img = Image(source='horizontal-logo.png')
 		#log_img.pos_hint={'center_x': 0.1, 'center_y': .5}
-		logohoulder.padding = [20,10,Window.width-250,0]
-		logohoulder.add_widget(log_img)
+		logo_houlder.padding = [20,10,Window.width-250,0]
+		logo_houlder.add_widget(log_img)
 
-		appLayout.add_widget(logohoulder)
+		self.root_layout.add_widget(logo_houlder)
 
 		#create BubbleButtons
 		btn1= Button(text='OpenBrowser', font_size=30
@@ -48,7 +50,7 @@ class KaliteUI(object):
 		    , color=(0.14, 0.23, 0.25, 1), bold=True)
 		btn3.background_normal='green_button_up.png'
 		#btn3.background_down='button_down.png'
-		btn3.bind(on_press=kaliteApp.getThreadNum)
+		btn3.bind(on_press=kaliteApp.set_thread_num)
 
 		btn4= Button(text='StopServer', font_size=30
 		    , color=(0.14, 0.23, 0.25, 1), bold=True)
@@ -61,62 +63,65 @@ class KaliteUI(object):
 		btn5.bind(on_press=kaliteApp.start_server)
 
 		#Add items to bubble
-		buttonsholder = _BoxLayout(orientation='horizontal')
-		buttonsholder.padding = [10,0,10,0]
-		buttonsholder.add_widget(btn1)
-		buttonsholder.add_widget(btn2)
-		buttonsholder.add_widget(btn3)
-		buttonsholder.add_widget(btn4)
-		buttonsholder.add_widget(btn5)
+		buttons_holder = _BoxLayout(orientation='horizontal')
+		buttons_holder.padding = [10,0,10,0]
+		buttons_holder.add_widget(btn1)
+		buttons_holder.add_widget(btn2)
+		buttons_holder.add_widget(btn3)
+		buttons_holder.add_widget(btn4)
+		buttons_holder.add_widget(btn5)
 
-		appLayout.add_widget(buttonsholder)
+		self.root_layout.add_widget(buttons_holder)
 
 		#image stuff
 		self.img_holder = BoxLayout(orientation='vertical', size=(200,200), size_hint=(1, None))
 		self.img_holder.padding = [0,80,0,10]
-		appLayout.add_widget(self.img_holder)
+		self.root_layout.add_widget(self.img_holder)
 
 		#thread input box
-		textinputholder = BoxLayout(orientation='horizontal')
-		textinputholder.padding = [200,10,200,10]
+		text_input_holder = BoxLayout(orientation='horizontal')
+		text_input_holder.padding = [200,10,200,10]
 
-		self.textinput = TextInput(multiline=False, 
+		self.text_input = TextInput(multiline=False, 
 		    hint_text="Enter number of threads here:")
-		self.textinput.padding = [10,10,10,10]
-		textinputholder.add_widget(self.textinput)
+		self.text_input.padding = [10,10,10,10]
+		text_input_holder.add_widget(self.text_input)
 
 		self.progress_bar = ProgressBar()
 
 		self.server_box = BoxLayout(orientation='horizontal')
 		self.messages = BoxLayout(orientation='vertical')
 
-		appLayout.add_widget(self.messages)
-		appLayout.add_widget(self.server_box)
-		appLayout.add_widget(textinputholder)
-		appLayout.add_widget(self.progress_bar)
+		self.root_layout.add_widget(self.messages)
+		self.root_layout.add_widget(self.server_box)
+		self.root_layout.add_widget(text_input_holder)
+		self.root_layout.add_widget(self.progress_bar)
 
-	def addMessages(self, message):
+	def get_root_Layout(self):
+		return self.root_layout
+
+	def add_messages(self, message):
 		self.messages.add_widget(message)
 
-	def removeMessages(self, message):
+	def remove_messages(self, message):
 		self.messages.remove_widget(message)
 
-	def addLoadingGif(self):
+	def add_loading_gif(self):
 		self.gif_img = Image(source='loading.zip',  anim_delay = 0.15)
 		#self.gif_img = Image(source='horizontal-logo.png')
 		self.img_holder.add_widget(self.gif_img)
 
-	def removeLoadingGif(self):
+	def remove_loading_gif(self):
 		self.img_holder.remove_widget(self.gif_img)
 
-	def getThreadNum(self):
-		return 'threads=' + self.textinput.text
+	def get_thread_num(self):
+		return 'threads=' + self.text_input.text
 
-	def startProgressBar(self, anim_value):
+	def start_progress_bar(self, anim_value):
 		self.anim = Animation(value = anim_value, duration = 1)
 		self.anim.start(self.progress_bar)
 
-	def animationBind(self, bindFunction):
+	def animation_bind(self, bindFunction):
 		self.anim.bind(on_complete = bindFunction)
 
 
