@@ -28,5 +28,7 @@ local.properties
 # submodules
 python-for-android
 
+.DS_Store
+
 log.txt
 
