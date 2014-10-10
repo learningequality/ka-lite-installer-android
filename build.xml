@@ -60,7 +60,7 @@
     <env key="ANDROIDSDK" value="${android-sdk}" />
     <env key="ANDROIDNDK" value="${android-ndk}" />
     <arg value="-m" />
-    <arg value="sqlite3 openssl kivy" />
+    <arg value="sqlite3 openssl m2crypto kivy" />
   </exec>
   <!-- include sqlite3, wsgiref, csv, unittest modules -->
   <replaceregexp file="python-for-android/dist/default/blacklist.txt"
