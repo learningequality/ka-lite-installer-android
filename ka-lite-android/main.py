@@ -63,8 +63,6 @@ class Wv(Widget):
                 AndroidService().stop()
             app.get_running_app().stop()
 #webview stuff
-# import pdb
-# pdb.set_trace()
 
 class ServerThread(threading.Thread, Server):
     def __init__(self, app):
@@ -242,19 +240,20 @@ class KALiteApp(App):
 
     progress_tracking = 0
     server_state = False
-    thread_num = None
+    thread_num = 'threads=18'
 
     def build(self):
         self.main_ui = KaliteUI(self)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         self.my_webview = Wv()
-
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
+        self.main_ui.add_loading_gif()
         self.kalite = ServerThread(self)
-        # self.prepare_server()
-        # self.kalite.start()
+        self.kalite.start()
+        self.prepare_server()
+
     def hook_keyboard(self, window, key, *largs):
         if key == 27:  # BACK
             self.my_webview.go_to_previous(App, self.kalite.server_is_running)
@@ -264,16 +263,20 @@ class KALiteApp(App):
         return True
 
     def on_stop(self):
+        if self.kalite.server_is_running:
+            from android import AndroidService
+            AndroidService().stop()
         if self.kalite.is_alive():
             self.kalite.schedule('stop_thread')
             self.kalite.join()
+        return True
 
-    def set_thread_num(self, widget):
-        self.main_ui.add_loading_gif()
+    # def set_thread_num(self, widget):
+    #     self.main_ui.add_loading_gif()
 
-        self.thread_num = self.main_ui.get_thread_num()
-        self.prepare_server()
-        self.kalite.start()
+    #     self.thread_num = self.main_ui.get_thread_num()
+    #     self.prepare_server()
+    #     self.kalite.start()
 
     @clock_callback
     def report_activity(self, activity, message):
@@ -297,10 +300,6 @@ class KALiteApp(App):
             if self.progress_tracking >= 97 and message == 'server is stopped':
                 self.server_state = True
                 self.start_server(self.thread_num)
-
-            if self.progress_tracking >= 97 and message == 'server is running':
-                self.main_ui.animation_bind(self.start_webview)
-                self.main_ui.remove_loading_gif()
 
             if self.server_state and message == 'OK':
                 self.server_state = False
@@ -329,25 +328,25 @@ class KALiteApp(App):
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description, threadnum)
 
-    def start_webview(self, instance, widget):
-        url = 'http://0.0.0.0:8008/'
-        webbrowser.open(url)
+    # def start_webview(self, instance, widget):
+    #     url = 'http://0.0.0.0:8008/'
+    #     webbrowser.open(url)
 
-    def start_webview_button(self):
-        url = 'http://0.0.0.0:8008/'
-        webbrowser.open(url)
+    # def start_webview_button(self):
+    #     url = 'http://0.0.0.0:8008/'
+    #     webbrowser.open(url)
 
-    def start_webview_bubblebutton(self, widget):
-        url = 'http://0.0.0.0:8008/'
-        webbrowser.open(url)
+    # def start_webview_bubblebutton(self, widget):
+    #     url = 'http://0.0.0.0:8008/'
+    #     webbrowser.open(url)
 
-    def quit_app(self, widget):
-        self.stop_server(widget)
-        App.get_running_app().stop()
+    # def quit_app(self, widget):
+    #     self.stop_server(widget)
+    #     App.get_running_app().stop()
 
-    def stop_server(self, widget):
-        if self.kalite.server_is_running:
-            self.kalite.schedule('stop_server', 'Stop server')
+    # def stop_server(self, widget):
+    #     if self.kalite.server_is_running:
+    #         self.kalite.schedule('stop_server', 'Stop server')
 
     @clock_callback
     def start_service_part(self, threadnum):
