@@ -21,8 +21,48 @@ from service.main import Server
 
 from kivy.core.window import Window
 from kivy.base import EventLoop
-import webbrowser
 
+#webview stuff
+from kivy.uix.widget import Widget
+from kivy.clock import Clock  
+from jnius import autoclass
+from android.runnable import run_on_ui_thread
+
+WebView = autoclass('android.webkit.WebView')
+WebViewClient = autoclass('android.webkit.WebViewClient')                                       
+android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
+System = autoclass('java.lang.System')
+
+class Wv(Widget):                                                                               
+    def __init__(self, **kwargs):                                                               
+        super(Wv, self).__init__(**kwargs)                                                      
+        Clock.schedule_once(self.create_webview, 0)                                             
+
+    @run_on_ui_thread                                                                           
+    def create_webview(self, *args):                                                            
+        self.webview = WebView(android_activity)                                                             
+        self.webview.getSettings().setJavaScriptEnabled(True)                                        
+        wvc = WebViewClient();                                                                  
+        self.webview.setWebViewClient(wvc);                                                          
+        # android_activity.setContentView(webview)                                                        
+        # webview.loadUrl('http://0.0.0.0:8008')
+
+    @run_on_ui_thread 
+    def run_webview(self):
+        self.webview.loadUrl('http://0.0.0.0:8008')
+        #self.webview.loadUrl('http://kitchen.learningequality.org:50130') 
+        android_activity.setContentView(self.webview)    
+
+    @run_on_ui_thread
+    def go_to_previous(self, app, server_is_running):
+        if self.webview.canGoBack():
+            self.webview.goBack()
+        else:
+            if server_is_running:
+                from android import AndroidService
+                AndroidService().stop()
+            app.get_running_app().stop()
+#webview stuff
 # import pdb
 # pdb.set_trace()
 
@@ -207,6 +247,7 @@ class KALiteApp(App):
     def build(self):
         self.main_ui = KaliteUI(self)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
+        self.my_webview = Wv()
 
         return self.main_ui.get_root_Layout()
 
@@ -263,7 +304,8 @@ class KALiteApp(App):
 
             if self.server_state and message == 'OK':
                 self.server_state = False
-                self.start_webview_button()
+                #self.start_webview_button()
+                self.my_webview.run_webview()
                 self.main_ui.remove_loading_gif()
 
     def prepare_server(self):
