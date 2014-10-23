@@ -19,6 +19,8 @@ logging.root = Logger
 
 from service.main import Server
 
+from kivy.core.window import Window
+from kivy.base import EventLoop
 import webbrowser
 
 # import pdb
@@ -204,6 +206,7 @@ class KALiteApp(App):
 
     def build(self):
         self.main_ui = KaliteUI(self)
+        EventLoop.window.bind(on_keyboard=self.hook_keyboard)
 
         return self.main_ui.get_root_Layout()
 
@@ -211,6 +214,10 @@ class KALiteApp(App):
         self.kalite = ServerThread(self)
         # self.prepare_server()
         # self.kalite.start()
+    def hook_keyboard(self, window, key, *largs):
+        if key == 27:  # BACK
+            self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+        return True
 
     def on_pause(self):
         return True
