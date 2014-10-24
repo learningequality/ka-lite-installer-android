@@ -58,10 +58,13 @@ class Wv(Widget):
         if self.webview.canGoBack():
             self.webview.goBack()
         else:
-            if server_is_running:
-                from android import AndroidService
-                AndroidService().stop()
-            app.get_running_app().stop()
+            try:
+                if server_is_running:
+                    from android import AndroidService
+                    AndroidService().stop()
+                app.get_running_app().stop()
+            except IOError:
+                print "cannot stop AndroidService normally"
 #webview stuff
 
 class ServerThread(threading.Thread, Server):
@@ -264,12 +267,14 @@ class KALiteApp(App):
 
     def on_stop(self):
         if self.kalite.server_is_running:
-            from android import AndroidService
-            AndroidService().stop()
+            try:
+                from android import AndroidService
+                AndroidService().stop()
+            except IOError:
+                print "cannot stop AndroidService normally"
         if self.kalite.is_alive():
             self.kalite.schedule('stop_thread')
             self.kalite.join()
-        return True
 
     # def set_thread_num(self, widget):
     #     self.main_ui.add_loading_gif()
