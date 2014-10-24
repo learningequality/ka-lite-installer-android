@@ -303,6 +303,11 @@ class KALiteApp(App):
                 self.server_state = True
                 self.start_server(self.thread_num)
 
+            if self.progress_tracking >= 97 and message == 'server is running':
+                self.server_state = False
+                self.my_webview.run_webview()
+                self.main_ui.remove_loading_gif()
+
             if self.server_state and message == 'OK':
                 self.server_state = False
                 #self.start_webview_button()
