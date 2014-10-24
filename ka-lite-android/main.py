@@ -50,7 +50,6 @@ class Wv(Widget):
     @run_on_ui_thread 
     def run_webview(self):
         self.webview.loadUrl('http://0.0.0.0:8008')
-        #self.webview.loadUrl('http://kitchen.learningequality.org:50130') 
         android_activity.setContentView(self.webview)    
 
     @run_on_ui_thread
@@ -281,13 +280,6 @@ class KALiteApp(App):
             self.kalite.schedule('stop_thread')
             self.kalite.join()
 
-    # def set_thread_num(self, widget):
-    #     self.main_ui.add_loading_gif()
-
-    #     self.thread_num = self.main_ui.get_thread_num()
-    #     self.prepare_server()
-    #     self.kalite.start()
-
     @clock_callback
     def report_activity(self, activity, message):
         assert activity in ('start', 'result')
@@ -335,7 +327,6 @@ class KALiteApp(App):
         schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
-        self.thread_num = self.main_ui.get_thread_num()
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
                                                     self.server_port, threadnum)
