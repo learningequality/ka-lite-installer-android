@@ -244,14 +244,19 @@ class KALiteApp(App):
     progress_tracking = 0
     server_state = False
     thread_num = 'threads=18'
+    key_generated = False
 
     def build(self):
         self.main_ui = KaliteUI(self)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         self.my_webview = Wv()
+        self.pref = android_activity.getSharedPreferences("MyPref", android_activity.MODE_PRIVATE)
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
+        if self.pref.getInt("MyPref", 0) == 1:
+            self.key_generated = True
+
         self.main_ui.add_loading_gif()
         self.kalite = ServerThread(self)
         self.kalite.start()
@@ -292,13 +297,13 @@ class KALiteApp(App):
             self.activity_label = Label(text="{0} ... ".format(message), color=(0.14, 0.23, 0.25, 1))
             self.main_ui.add_messages(self.activity_label)
 
-            self.progress_tracking += 6.25
+            self.progress_tracking += 8.3
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
             self.activity_label.text = self.activity_label.text + message
 
-            self.progress_tracking += 6.25
+            self.progress_tracking += 8.3
             self.main_ui.start_progress_bar(self.progress_tracking)
 
 
@@ -318,11 +323,15 @@ class KALiteApp(App):
         schedule = self.kalite.schedule
         schedule('extract_kalite', 'Extracting ka-lite archive')
         schedule('setup_environment', 'Setting up environment')
-        schedule('python_version', 'Checking Python version')
-        schedule('import_django', 'Trying to import Django')
-        schedule('syncdb', 'Preparing database')
-        schedule('generate_keys', 'Generating keys')
-        schedule('create_superuser', 'Creating admin user')
+        #schedule('python_version', 'Checking Python version')
+        #schedule('import_django', 'Trying to import Django')
+        if not self.key_generated:
+            schedule('syncdb', 'Preparing database')
+            schedule('generate_keys', 'Generating keys')
+            schedule('create_superuser', 'Creating admin user')
+        else:
+            self.progress_tracking += 50
+
         schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
