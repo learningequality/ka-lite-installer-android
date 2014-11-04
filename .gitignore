@@ -26,7 +26,7 @@ local.properties
 *.sublime-workspace
 
 # submodules
-python-for-android
+#python-for-android
 
 .DS_Store
 
