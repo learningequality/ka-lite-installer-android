@@ -177,7 +177,8 @@ class ServerThread(threading.Thread, Server):
         #from config.models import Settings
         #if Settings.get('private_key'):
         #    return 'key exists'
-        self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
+        JavaHandler.generateRSA()
+        #self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
 
     def create_superuser(self):
         from django.contrib.auth.models import User
