@@ -1,0 +1,1 @@
+-lm -L/Users/Eli/Desktop/kaliteandroid78/python-for-android/build/libs -Llibs/armeabi -L/Users/Eli/Desktop/kaliteandroid78/python-for-android/build/python-install/lib -lsdl -llog -lpython2.7

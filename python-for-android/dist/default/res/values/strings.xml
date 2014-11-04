@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="appName">KA Lite test</string>
+<string name="iconName">KA Lite test</string>
+
+<string name="private_version">1415124644.76</string>
+
+
+<string name="public_version">1415124644.76</string>
+
+<string name="urlScheme">kivy</string>
+
+
+</resources>
