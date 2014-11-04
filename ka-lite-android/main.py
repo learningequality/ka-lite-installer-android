@@ -259,8 +259,13 @@ class KALiteApp(App):
     def build(self):
         self.main_ui = KaliteUI(self)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
-        self.my_webview = Wv()
+        self.my_webview = JavaHandle()
+   #     self.my_webview.create_RSA()
+        # self.java_handle = JavaHandler()
+        # self.java_handle.initWebView()
+
         self.pref = android_activity.getSharedPreferences("MyPref", android_activity.MODE_PRIVATE)
+
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
@@ -274,22 +279,32 @@ class KALiteApp(App):
 
     def hook_keyboard(self, window, key, *largs):
         if key == 27:  # BACK
-            self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+                self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+             #   return True
+            # if self.back_pressed + 500 > System.currentTimeMillis():
+            #     if self.kalite.server_is_running:
+            #         from android import AndroidService
+            #         AndroidService().stop()
+            #     App.get_running_app().stop()
+
+            # self.back_pressed = System.currentTimeMillis()
+    #        self.my_webview.go_to_previous(App, self.kalite.server_is_running)
         return True
 
     def on_pause(self):
         return True
 
-    def on_stop(self):
-        if self.kalite.server_is_running:
-            try:
-                from android import AndroidService
-                AndroidService().stop()
-            except IOError:
-                print "cannot stop AndroidService normally"
-        if self.kalite.is_alive():
-            self.kalite.schedule('stop_thread')
-            self.kalite.join()
+        # if self.kalite.server_is_running:
+        #     #self.kalite.schedule('stop_server', 'Stop server')
+        #     try:
+        #         from android import AndroidService
+        #         AndroidService().stop()
+        #     except IOError:
+        #         print "cannot stop AndroidService normally"
+        # if self.kalite.is_alive():
+        #     self.kalite.schedule('stop_thread')
+        #     self.kalite.join()
+       # return True
 
     @clock_callback
     def report_activity(self, activity, message):
@@ -358,12 +373,10 @@ class KALiteApp(App):
     #     webbrowser.open(url)
 
     # def start_webview_bubblebutton(self, widget):
-    #     url = 'http://0.0.0.0:8008/'
-    #     webbrowser.open(url)
-
-    # def quit_app(self, widget):
-    #     self.stop_server(widget)
-    #     App.get_running_app().stop()
+    #     self.my_webview.run_webview()
+   #     self.main_ui.root_layout.add_widget(self.my_webview.run_webview()) # webview stuff
+   #     url = 'http://0.0.0.0:8008/'
+   #     webbrowser.open(url)
 
     # def stop_server(self, widget):
     #     if self.kalite.server_is_running:
