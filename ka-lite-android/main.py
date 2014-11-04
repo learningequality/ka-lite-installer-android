@@ -277,6 +277,8 @@ class KALiteApp(App):
         self.kalite.start()
         self.prepare_server()
 
+    back_pressed = 0
+
     def hook_keyboard(self, window, key, *largs):
         if key == 27:  # BACK
                 self.my_webview.go_to_previous(App, self.kalite.server_is_running)
@@ -315,13 +317,13 @@ class KALiteApp(App):
             self.activity_label = Label(text="{0} ... ".format(message), color=(0.14, 0.23, 0.25, 1))
             self.main_ui.add_messages(self.activity_label)
 
-            self.progress_tracking += 8.3
+            self.progress_tracking += 10
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
             self.activity_label.text = self.activity_label.text + message
 
-            self.progress_tracking += 8.3
+            self.progress_tracking += 10
             self.main_ui.start_progress_bar(self.progress_tracking)
 
 
@@ -347,13 +349,22 @@ class KALiteApp(App):
         schedule('extract_kalite', 'Extracting ka-lite archive')
         schedule('setup_environment', 'Setting up environment')
         #schedule('python_version', 'Checking Python version')
-        #schedule('import_django', 'Trying to import Django')
+        schedule('import_django', 'Trying to import Django')
         if not self.key_generated:
-            schedule('syncdb', 'Preparing database')
+    #jjj    if 2>3:
+    #jjj        schedule('syncdb', 'Preparing database')
             schedule('generate_keys', 'Generating keys')
             schedule('create_superuser', 'Creating admin user')
+            #create a setting file
+            # settings_path = self.user_data_dir
+            # my_setting_file = open(settings_path+'/mySettings.txt', 'w')
+            # my_setting_file.write('allset')
+            # my_setting_file.close()
+            self.editor = self.pref.edit()
+            self.editor.putInt("MyPref", 1)
+            self.editor.apply()
         else:
-            self.progress_tracking += 50
+            self.progress_tracking += 40
 
         schedule('check_server', 'Checking server status')
 
