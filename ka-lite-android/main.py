@@ -40,24 +40,38 @@ System = autoclass('java.lang.System')
 #MyWebChromeClient = autoclass('org.eli.MyWebChromeClient')
 JavaHandler = autoclass('org.javahandlers.JavaHandler')
 
+class JavaHandle(Widget): 
+    def  __init__(self, **kwargs):
+        super(JavaHandle, self).__init__(**kwargs)
+        Clock.schedule_once(self.create_webview, 0)
+    @run_on_ui_thread   
+    def create_webview(self, *args):    
+        self.java_handle = JavaHandler()
+ #       self.java_handle.generateRSA()
+       # self.java_handle.initWebView()
 
     @run_on_ui_thread 
     def run_webview(self):
-        self.webview.loadUrl('http://0.0.0.0:8008')
-        android_activity.setContentView(self.webview)    
+        self.java_handle.showWebView()
 
     @run_on_ui_thread
     def go_to_previous(self, app, server_is_running):
-        if self.webview.canGoBack():
-            self.webview.goBack()
+        if self.java_handle.backPressed():
+            return False
+          #  self.java_handle.goBack()
         else:
             try:
                 if server_is_running:
                     from android import AndroidService
                     AndroidService().stop()
-                app.get_running_app().stop()
+                #App.get_running_app().stop()
+                self.java_handle.quitApp()
             except IOError:
                 print "cannot stop AndroidService normally"
+
+    # def create_RSA(self):
+    #     self.java_handle.generateRSA()
+
 #webview stuff
 
 class ServerThread(threading.Thread, Server):
@@ -124,9 +138,11 @@ class ServerThread(threading.Thread, Server):
 
         os.chdir(self.project_dir)
         if os.path.exists('ka-lite.zip'):
-            with ZipFile('ka-lite.zip', mode="r") as z:
-                z.extractall('ka-lite')
-            os.remove('ka-lite.zip')
+            JavaHandler.unzipKaLite()
+    #         with ZipFile('ka-lite.zip', mode="r") as z:
+    # #jjj            z.extractall('ka-lite')
+    #             z.extractall('.')   #we can change here or change Aron's code
+    #         os.remove('ka-lite.zip')
         if not os.path.exists('ka-lite'):
             return 'fail'
 
