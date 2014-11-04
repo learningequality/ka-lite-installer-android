@@ -269,6 +269,14 @@ class KALiteApp(App):
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
+        #check mySettings file
+        # settings_path = self.user_data_dir
+        # try:
+        #     my_setting_file = open(settings_path+'/mySettings.txt', 'r')
+        #     if my_setting_file.read() == "allset":
+        #         self.key_generated = True
+        # except IOError:
+        #     print "file has not been created yet"
         if self.pref.getInt("MyPref", 0) == 1:
             self.key_generated = True
 
@@ -276,6 +284,7 @@ class KALiteApp(App):
         self.kalite = ServerThread(self)
         self.kalite.start()
         self.prepare_server()
+        #self.kalite.start()
 
     back_pressed = 0
 
@@ -321,6 +330,9 @@ class KALiteApp(App):
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
+            # if hasattr(self, 'activity_label'):
+            #     self.main_ui.remove_messages(self.activity_label)
+
             self.activity_label.text = self.activity_label.text + message
 
             self.progress_tracking += 10
@@ -369,6 +381,7 @@ class KALiteApp(App):
         schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
+        #self.thread_num = self.main_ui.get_thread_num()
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
                                                     self.server_port, threadnum)
@@ -392,6 +405,9 @@ class KALiteApp(App):
     # def stop_server(self, widget):
     #     if self.kalite.server_is_running:
     #         self.kalite.schedule('stop_server', 'Stop server')
+    #     else:
+    #         self.activity_label = Label(text="no running server", color=(0.14, 0.23, 0.25, 1))
+    #         self.main_ui.add_messages(self.activity_label)
 
     @clock_callback
     def start_service_part(self, threadnum):
