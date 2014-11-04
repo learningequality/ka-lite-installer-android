@@ -19,33 +19,27 @@ logging.root = Logger
 
 from service.main import Server
 
+import webbrowser
 from kivy.core.window import Window
-from kivy.base import EventLoop
+from kivy.base import EventLoop 
+
+# import pdb
+# pdb.set_trace()
 
 #webview stuff
 from kivy.uix.widget import Widget
 from kivy.clock import Clock  
-from jnius import autoclass
+from jnius import autoclass, cast
 from android.runnable import run_on_ui_thread
 
 WebView = autoclass('android.webkit.WebView')
+Window = autoclass('android.view.Window')
 WebViewClient = autoclass('android.webkit.WebViewClient')                                       
 android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
 System = autoclass('java.lang.System')
+#MyWebChromeClient = autoclass('org.eli.MyWebChromeClient')
+JavaHandler = autoclass('org.javahandlers.JavaHandler')
 
-class Wv(Widget):                                                                               
-    def __init__(self, **kwargs):                                                               
-        super(Wv, self).__init__(**kwargs)                                                      
-        Clock.schedule_once(self.create_webview, 0)                                             
-
-    @run_on_ui_thread                                                                           
-    def create_webview(self, *args):                                                            
-        self.webview = WebView(android_activity)                                                             
-        self.webview.getSettings().setJavaScriptEnabled(True)                                        
-        wvc = WebViewClient();                                                                  
-        self.webview.setWebViewClient(wvc);                                                          
-        # android_activity.setContentView(webview)                                                        
-        # webview.loadUrl('http://0.0.0.0:8008')
 
     @run_on_ui_thread 
     def run_webview(self):
