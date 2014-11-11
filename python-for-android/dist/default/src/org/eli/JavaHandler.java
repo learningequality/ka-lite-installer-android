@@ -401,14 +401,12 @@ public class JavaHandler {
             {
                try
                {
-               		System.out.println("elieli creating key"); 
                     FileOutputStream fOut = new FileOutputStream(myFile);
                     OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
                     myOutWriter.append(gut);
                     myOutWriter.close();
                     fOut.close();
-
-                    System.out.println("elieli done"); 
+                    System.out.println("elieli key done"); 
                 } catch(Exception e)
                 {
 
@@ -421,7 +419,6 @@ public class JavaHandler {
             }
             
         } catch(Exception e) { 
-        	System.out.println("elieli error"); 
             System.out.println("RSA generating error"); 
         }
 	}
