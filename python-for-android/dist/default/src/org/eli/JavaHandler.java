@@ -47,12 +47,22 @@ import java.io.OutputStreamWriter;
 
 import android.widget.Toast;
 import java.lang.Thread;
+//import org.jshybugger.DebugServiceClient;
+
+//webview
+import android.webkit.WebChromeClient.CustomViewCallback;
 import android.widget.FrameLayout;
 import android.widget.VideoView;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.widget.LinearLayout;
+import android.view.ViewGroup;
+import android.graphics.Canvas;
+import android.net.Uri;
+import android.content.Intent;
+
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.AlertDialog;
@@ -229,49 +239,45 @@ public class JavaHandler {
 
 	public static void unzipThreadUI(String _zipFile, String _targetLocation){
 		//create target location folder if not exist
-			dirChecker(_targetLocation);
-			byte[] buffer = new byte[1024];
-			try {
-				FileInputStream fin = new FileInputStream(_zipFile);
-				ZipInputStream zin = new ZipInputStream(fin);
-				ZipEntry ze = zin.getNextEntry();
-				while (ze != null) {
-					System.out.println("elieli while 1: "+ ze.getName());
-					//create dir if required while unzipping
-					if (ze.isDirectory()) {
-						System.out.println("elieli while dir");
-						dirChecker(_targetLocation + File.separator + ze.getName());
-					} else {
-						System.out.println("elieli while file: " + _targetLocation + File.separator + ze.getName());
-						File newfile = new File(_targetLocation + File.separator + ze.getName());						
-						File parentDir = new File(newfile.getParent());
-						System.out.println("elieli parent: " + newfile.getParent());
-						if(!parentDir.exists()){
-							System.out.println("elieli create dir");
-							parentDir.mkdirs();
-						}
-						
-						FileOutputStream fout = new FileOutputStream(newfile);
-						System.out.println("elieli pass fout");
-
-						int len_ui;
-			            while ((len_ui = zin.read(buffer)) > 0) {
-			            	fout.write(buffer, 0, len_ui);
-				//       		System.out.println("elieli 2.5");
-			            }
-						System.out.println("elieli close nentry");
-						zin.closeEntry();
-						fout.close();
+		dirChecker(_targetLocation);
+		byte[] buffer = new byte[1024];
+		try {
+			FileInputStream fin = new FileInputStream(_zipFile);
+			ZipInputStream zin = new ZipInputStream(fin);
+			ZipEntry ze = zin.getNextEntry();
+			while (ze != null) {
+			//	System.out.println("elieli while 1: "+ ze.getName());
+				//create dir if required while unzipping
+				if (ze.isDirectory()) {
+				//	System.out.println("elieli while dir");
+					dirChecker(_targetLocation + File.separator + ze.getName());
+				} else {
+				//	System.out.println("elieli while file: " + _targetLocation + File.separator + ze.getName());
+					File newfile = new File(_targetLocation + File.separator + ze.getName());						
+					File parentDir = new File(newfile.getParent());
+				//	System.out.println("elieli parent: " + newfile.getParent());
+					if(!parentDir.exists()){
+						parentDir.mkdirs();
 					}
-					ze = zin.getNextEntry();
+					
+					FileOutputStream fout = new FileOutputStream(newfile);
+
+					int len_ui;
+		            while ((len_ui = zin.read(buffer)) > 0) {
+		            	fout.write(buffer, 0, len_ui);
+		            }
+			//		System.out.println("elieli close nentry");
+					zin.closeEntry();
+					fout.close();
 				}
-				System.out.println("elieli done");
-				zin.close();
-				new File(_zipFile).delete(); 
-			} catch (Exception e) {
-				System.out.println(e);
-				System.out.println("elieli error");
+				ze = zin.getNextEntry();
 			}
+			System.out.println("elieli done");
+			zin.close();
+			new File(_zipFile).delete(); 
+		} catch (Exception e) {
+			System.out.println(e);
+		}
 	}
 
 //don't use this AsyncTask because environment setup need to wait unzip finished 
