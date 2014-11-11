@@ -38,12 +38,14 @@ WebViewClient = autoclass('android.webkit.WebViewClient')
 android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
 System = autoclass('java.lang.System')
 #MyWebChromeClient = autoclass('org.eli.MyWebChromeClient')
-JavaHandler = autoclass('org.javahandlers.JavaHandler')
+JavaHandler = autoclass('org.eli.JavaHandler')
 
 class JavaHandle(Widget): 
     def  __init__(self, **kwargs):
         super(JavaHandle, self).__init__(**kwargs)
-        Clock.schedule_once(self.create_webview, 0)
+        #Clock.schedule_once(self.create_webview, 0)
+        self.create_webview(**kwargs)
+
     @run_on_ui_thread   
     def create_webview(self, *args):    
         self.java_handle = JavaHandler()
@@ -53,6 +55,11 @@ class JavaHandle(Widget):
     @run_on_ui_thread 
     def run_webview(self):
         self.java_handle.showWebView()
+
+    @run_on_ui_thread 
+    def move_content(self):
+        #JavaHandler.displayInLogCat("catcat move_content")
+        JavaHandler.movingFile()
 
     @run_on_ui_thread
     def go_to_previous(self, app, server_is_running):
@@ -69,14 +76,23 @@ class JavaHandle(Widget):
             except IOError:
                 print "cannot stop AndroidService normally"
 
+    @run_on_ui_thread 
+    def show_toast(self, string):
+        self.java_handle.show_toast(string)
+
+    @run_on_ui_thread
+    def reload_first_page(self):
+        self.java_handle.reloadFirstPage()
+
     # def create_RSA(self):
     #     self.java_handle.generateRSA()
 
 #webview stuff
 
 class ServerThread(threading.Thread, Server):
-    def __init__(self, app):
+    def __init__(self, app, mwebview):
         super(ServerThread, self).__init__()
+        self.web_view = mwebview
 
         class AppCaller(object):
             '''Execute App method in the main thread'''
@@ -172,6 +188,17 @@ class ServerThread(threading.Thread, Server):
     def syncdb(self):
         self.execute_manager(self.settings, ['manage.py', 'syncdb', '--noinput'])
         self.execute_manager(self.settings, ['manage.py', 'migrate', '--merge'])
+
+    #cannot run on ui thread, otherwise it will not show on the schedule page.
+    def schedule_reload_content(self):
+        if JavaHandler.movingFile():
+            return 'Loading finished'
+        else:
+            #JavaHandler.static_show_toast(android_activity, 'Content folder not found! App exits...')
+            self.web_view.show_toast('Content folder not found! App exits...')
+            time.sleep(4)
+            JavaHandler.killApp()
+
 
     def generate_keys(self):
         #from config.models import Settings
@@ -281,7 +308,7 @@ class KALiteApp(App):
             self.key_generated = True
 
         self.main_ui.add_loading_gif()
-        self.kalite = ServerThread(self)
+        self.kalite = ServerThread(self, self.my_webview)
         self.kalite.start()
         self.prepare_server()
         #self.kalite.start()
@@ -326,7 +353,7 @@ class KALiteApp(App):
             self.activity_label = Label(text="{0} ... ".format(message), color=(0.14, 0.23, 0.25, 1))
             self.main_ui.add_messages(self.activity_label)
 
-            self.progress_tracking += 10
+            self.progress_tracking += 7.5
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
@@ -335,7 +362,7 @@ class KALiteApp(App):
 
             self.activity_label.text = self.activity_label.text + message
 
-            self.progress_tracking += 10
+            self.progress_tracking += 7.5
             self.main_ui.start_progress_bar(self.progress_tracking)
 
 
@@ -348,7 +375,13 @@ class KALiteApp(App):
                 self.my_webview.run_webview()
                 self.main_ui.remove_loading_gif()
 
-            if self.server_state and message == 'OK':
+            if self.progress_tracking >= 97 and message == 'Loading finished':
+                JavaHandler.displayInLogCat("rerere finished")
+                self.server_state = False
+                self.my_webview.run_webview()
+                self.main_ui.remove_loading_gif()
+
+            if self.server_state and message == 'OK' and self.progress_tracking >= 97:
                 self.server_state = False
                 #self.start_webview_button()
                 self.my_webview.run_webview()
@@ -357,28 +390,31 @@ class KALiteApp(App):
     def prepare_server(self):
         '''Schedule preparation steps to be executed in the server thread'''
 
-        schedule = self.kalite.schedule
-        schedule('extract_kalite', 'Extracting ka-lite archive')
-        schedule('setup_environment', 'Setting up environment')
+        self.schedule = self.kalite.schedule
+        self.schedule('extract_kalite', 'Extracting ka-lite archive')
+        # self.my_webview.move_content()
+        self.schedule('setup_environment', 'Setting up environment')
         #schedule('python_version', 'Checking Python version')
-        schedule('import_django', 'Trying to import Django')
+        self.schedule('import_django', 'Trying to import Django')
         if not self.key_generated:
     #jjj    if 2>3:
     #jjj        schedule('syncdb', 'Preparing database')
-            schedule('generate_keys', 'Generating keys')
-            schedule('create_superuser', 'Creating admin user')
+            #self.my_webview.move_content()
+            self.schedule('generate_keys', 'Generating keys')
+            self.schedule('create_superuser', 'Creating admin user')
+            self.schedule('schedule_reload_content', 'Loading the content')
             #create a setting file
             # settings_path = self.user_data_dir
             # my_setting_file = open(settings_path+'/mySettings.txt', 'w')
             # my_setting_file.write('allset')
             # my_setting_file.close()
             self.editor = self.pref.edit()
-            self.editor.putInt("MyPref", 1)
+            self.editor.putInt("setup", 1)
             self.editor.apply()
         else:
-            self.progress_tracking += 40
+            self.progress_tracking += 45
 
-        schedule('check_server', 'Checking server status')
+        self.schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
         #self.thread_num = self.main_ui.get_thread_num()
@@ -387,6 +423,13 @@ class KALiteApp(App):
                                                     self.server_port, threadnum)
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description, threadnum)
+
+    def reload_content(self, widget):
+        # self.my_webview.move_content()
+        self.progress_tracking -= 30
+        self.main_ui.start_progress_bar(self.progress_tracking)
+        self.schedule('schedule_reload_content', 'Reloading the content')
+
 
     # def start_webview(self, instance, widget):
     #     url = 'http://0.0.0.0:8008/'
