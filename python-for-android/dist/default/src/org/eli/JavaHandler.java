@@ -421,23 +421,7 @@ public class JavaHandler {
 	}
 
 	public void initWebView(){
-// 		myActivity = (Activity)PythonActivity.mActivity; 
-// //		pd = new ProgressDialog(myActivity);
-// //		pb = new ProgressBar(myActivity);
-// 		wv = new WebView(myActivity);
 
-// 		myActivity.getWindow().requestFeature(Window.FEATURE_PROGRESS);
-// 		myActivity.getWindow().setFeatureInt(Window.FEATURE_PROGRESS, Window.PROGRESS_VISIBILITY_ON);
-// 		wv.setWebViewClient(new WebViewClient());
-// 		wv.setWebChromeClient(new MyWebChromeClient());
-// 		WebSettings ws = wv.getSettings();
-// 		ws.setJavaScriptEnabled(true);
-// 		ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
-// 		ws.setRenderPriority(WebSettings.RenderPriority.HIGH);
-
-		// pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		// pd.setTitle("Please wait");
-  //  		pd.setMessage("Page is loading...");
 	}
 
 	public void show_toast(String str){
@@ -489,7 +473,7 @@ public class JavaHandler {
 		//wv.setWebContentsDebuggingEnabled(true);
 //		}
 
-		wv.setWebViewClient(new WebViewClient());
+		wv.setWebViewClient(new MyWebViewClient());
 		wv.setWebChromeClient(new MyWebChromeClient());
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
@@ -591,6 +575,32 @@ public class JavaHandler {
             }
 		}
 	}
+
+	private class MyWebViewClient extends WebViewClient {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            // view.loadUrl(url);
+            // return super.shouldOverrideUrlLoading(view, url);
+            if(url.endsWith(".pdf")){
+            	String content_path = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content/content/";
+            	String[] parts = url.split("/");
+            	String pdf_path = content_path + parts[parts.length - 1];
+            	Toast.makeText(myActivity, pdf_path, Toast.LENGTH_LONG).show();
+            	File pdf_file = new File(pdf_path);
+            	Uri pdf_uri = Uri.fromFile(pdf_file);
+            	//Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            	Intent intent = new Intent(Intent.ACTION_VIEW);
+            	intent.setDataAndType(pdf_uri, "application/pdf");
+           // 	intent.setPackage("com.adobe.reader");
+            //	intent.setType("application/pdf");
+        		myActivity.startActivity(intent);
+            	return true;
+            }else{
+            	view.loadUrl(url);
+            	return false;
+            }
+        }
+    }
 
 	private class MyWebView extends WebView{
 
