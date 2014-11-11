@@ -47,6 +47,12 @@ import java.io.OutputStreamWriter;
 
 import android.widget.Toast;
 import java.lang.Thread;
+import android.widget.FrameLayout;
+import android.widget.VideoView;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnPreparedListener;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.AlertDialog;
@@ -59,9 +65,10 @@ import android.content.SharedPreferences.Editor;
 
 
 public class JavaHandler {
-	Activity myActivity = (Activity)PythonActivity.mActivity;
+	static Activity myActivity = (Activity)PythonActivity.mActivity;
 	ProgressBar progressBar;
-	MyWebView wv;
+	WebView wv;
+	boolean webviewRedraw = true;
 	static boolean asus_switch = false;   //for faster development, skip moving file.
 	static String content_data_path;
 	SharedPreferences sharedpreferences;
@@ -451,15 +458,27 @@ public class JavaHandler {
 		// retrieve the top view of our application
 		final FrameLayout decorView = (FrameLayout) myActivity.getWindow().getDecorView();
 		decorView.addView(progressBar);
-
-		wv = new MyWebView(myActivity);
-		wv.setBackgroundColor(Color.WHITE);
 //for nexus 7 only
 		// if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
 		//     WebView.setWebContentsDebuggingEnabled(true);
 		// }
+		String deviceName = Build.MODEL;
+		String deviceMan = Build.MANUFACTURER;
 
-		if (Build.VERSION.SDK_INT >= 19) {
+		if(deviceName.equals("ME172V") && deviceMan.equals("asus")){
+			webviewRedraw = true;
+			// Toast.makeText(myActivity, "ASUS",
+   //  				Toast.LENGTH_SHORT).show();
+		}
+
+		if(webviewRedraw){
+			wv = new MyWebView(myActivity);
+		}else{
+			wv = new WebView(myActivity);
+		}
+
+
+		if (Build.VERSION.SDK_INT >= 19 || webviewRedraw) {
 		    wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 		}       
 		else {
@@ -474,15 +493,30 @@ public class JavaHandler {
 		wv.setWebChromeClient(new MyWebChromeClient());
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
+		ws.setPluginState(WebSettings.PluginState.ON);
+	//	ws.setSupportMultipleWindows(true);
+	//	ws.setJavaScriptCanOpenWindowsAutomatically(true);
+	//	ws.setAllowFileAccess(true);
+	//	ws.setAllowContentAccess(true);
+
+		ws.setDatabaseEnabled(true);
+		//enable to use "window.localStorage['my']='hello1'", in webview js on >= android 2.0
+		ws.setDomStorageEnabled(true);
+
+		//if no set or wrong path, variables disappear on killed
+		ws.setDatabasePath("/data/data/"+myActivity.getPackageName()+"/databases/"); 
+		wv.loadUrl("http://0.0.0.0:8008/");
 		ws.setRenderPriority(WebSettings.RenderPriority.HIGH);
-		ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
-		// ws.setRenderPriority(WebSettings.RenderPriority.HIGH);
+	//	ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
+		ws.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
 
-        wv.loadUrl("http://0.0.0.0:8008");
- //       wv.loadUrl("http://www.google.com");
+		// LinearLayout workaround = new LinearLayout(myActivity);
+		// workaround.setBackgroundColor(Color.TRANSPARENT);
+		// wv.addView(workaround, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+//		DebugServiceClient.attachWebView(wv, myActivity);
 
-        // Setting the RelativeLayout as our content view
-    //    myActivity.setContentView(relativeLayout, rlp);
+      //  wv.loadUrl(DebugServiceClient.getDebugUrl("http://0.0.0.0:8008"));
+	//	wv.loadUrl("http://0.0.0.0:8008");
         myActivity.setContentView(wv);
 	}
 
@@ -563,6 +597,15 @@ public class JavaHandler {
 	    public MyWebView(Context context) {
 	        super(context);
 	        // TODO Auto-generated constructor stub
+	    }
+
+	    @Override
+	    public void onDraw(Canvas canvas){
+	    	// if(webviewRedraw){
+	     //    	this.invalidate();
+	     //    } 
+	    	this.invalidate();
+	        super.onDraw(canvas);
 	    }
 
 	    private long lastMoveEventTime = -1;
