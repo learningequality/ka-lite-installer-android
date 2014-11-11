@@ -376,8 +376,7 @@ public class JavaHandler {
 
             String gut ="CHANNEL = \"connectteaching\"" +
             		"\nLOAD_KHAN_RESOURCES = False" +
-            		// "\nCONTENT_ROOT = \"/mnt/sd-ext/ka-lite/content/\"" +
-            		// "\nCONTENT_DATA_PATH = \"/mnt/sd-ext/ka-lite/data/\"" +
+           // 		"\nLOCKDOWN = True" +   //jamie ask to add it, need to test
             		content_root +
             		content_data +
             		"\nUSE_I18N = False" +
