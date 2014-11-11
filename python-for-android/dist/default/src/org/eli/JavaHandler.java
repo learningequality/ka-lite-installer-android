@@ -110,7 +110,6 @@ public class JavaHandler {
 	    }
 	}
 
-	public static void movingFile(){
 	public static boolean movingFile(){
 		System.out.println("momomo movingFile start..");
 		String copied_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content";
@@ -360,14 +359,16 @@ public class JavaHandler {
             // writer2.close();
             String content_root = null;
             String content_data = null;
-            // File dir_ainol = new File("/mnt/sd-ext");
-            // File dir_nexus7 = new File("/storage/emulated/0");
-            // File dir_asus_memo = new File("/removable/microsd");
 
             String copied_sdcard_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content";
 
-            content_root = "\nCONTENT_ROOT = \"" + copied_sdcard_content +"/content/\"";
-            content_data = "\nCONTENT_DATA_PATH = \"" + copied_sdcard_content +"/data/\"";
+            if(!asus_switch){
+	            content_root = "\nCONTENT_ROOT = \"" + copied_sdcard_content +"/content/\"";
+	            content_data = "\nCONTENT_DATA_PATH = \"" + copied_sdcard_content +"/data/\"";
+	        }else{
+	            content_root = "\nCONTENT_ROOT = \""  +"/Removable/MicroSD/ka-lite/content/\"";
+	            content_data = "\nCONTENT_DATA_PATH = \"" +"/Removable/MicroSD/ka-lite/data/\"";
+	        }
 
 			// if(dir_ainol.exists()) {
 			// 	content_root = "\nCONTENT_ROOT = \"/mnt/sd-ext/ka-lite/content/\"";
