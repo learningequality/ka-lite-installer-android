@@ -258,6 +258,27 @@ class ServerThread(threading.Thread, Server):
         return 'user "{0}" with password "{1}"'.format(username,
                                                        password)
 
+    # def create_superuser(self):
+    #     from django.contrib.auth.models import User
+    #     if User.objects.filter(is_superuser=True).exists():
+    #         return 'user exists'
+
+    #     username = 'yoda'
+    #     email = 'yoda@example.com'
+    #     password = 'yoda'
+
+    #     self.execute_manager(self.settings, [
+    #             'manage.py', 'setup',
+    #             '--noinput',
+    #             '--user', username,
+    #             '--password', password,
+    #             '--email', email])
+    #    # user = User.objects.get(username__exact=username)
+    #   #  user.set_password(password)
+    #   #  user.save()
+    #     return 'user "{0}" with password "{1}"'.format(username,
+    #                                                    password)
+
     def check_server(self):
         return 'server is running' if self.server_is_running else (
             'server is stopped')
