@@ -53,52 +53,153 @@ public class JavaHandler {
 	Activity myActivity = (Activity)PythonActivity.mActivity;
 	ProgressBar progressBar;
 	MyWebView wv;
+	static boolean asus_switch = false;   //for faster development, skip moving file.
+	static String content_data_path;
 
 	public static void unzipKaLite(){
 		String _fileLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite.zip";
 	    String _targetLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/.";
-	    movingFile();
 	    unzipThreadUI(_fileLocation, _targetLocation);
+	    // if(!asus_switch){
+	    // 	movingFile();
+	    // }
+	}
+
+	public static void recursive_search(File root){
+		if(root.listFiles()!=null && root.listFiles().length>0){
+			for (File f: root.listFiles()) {
+				if(f.isDirectory()){
+					if(!f.getPath().contains("org.kalite.test")){
+						if(f.getName().equals("ka-lite")){
+							System.out.println("lalala found: " + f.getPath());
+							content_data_path = f.getPath();
+							break;
+						}
+						recursive_search(f);
+					}
+				}
+	        }
+	    }
 	}
 
 	public static void movingFile(){
+	public static boolean movingFile(){
+		System.out.println("momomo movingFile start..");
 		String copied_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content";
 	    String moving = "null";
 	    File dir_ainol = new File("/mnt/sd-ext/ka-lite");//this folder has to have unique name
         File dir_nexus7 = new File("/storage/emulated/0/UNICEF");//this folder has to have unique name
-        File dir_asus_memo = new File("/removable/microsd/ka-lite");//this folder has to have unique name
+        File dir_asus_memo = new File("/Removable/MicroSD/ka-lite");//this folder has to have unique name
 		if(dir_ainol.exists()) {
+			System.out.println("movingFile from SD Ainol");
 			moving = "/mnt/sd-ext/ka-lite";
 		}else if(dir_asus_memo.exists()){
-			moving = "/removable/microsd/ka-lite";
+			System.out.println("movingFile from SD Asus");
+			moving = "/Removable/MicroSD/ka-lite";
 		}else if(dir_nexus7.exists()){
 			moving = "/storage/emulated/0/UNICEF";
-		}
-		File sourceFile = new File(moving);
-		if(sourceFile.exists()){
-			
-			Thread myThread = new Thread(new Runnable() {
-			    @Override
-			    public void run() {
-			        try {
-			            Thread.sleep(5000);
-			        } catch (InterruptedException e) {
-			            e.printStackTrace();
-			        }
-			    }
-			});
-			String zipped_location = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test";
-			File zipped = new File(zipped_location);
-			while(!zipped.exists()){
-				myThread.start();
+		}else{
+			File _root = Environment.getExternalStorageDirectory();
+			recursive_search(_root);
+			moving = content_data_path;  //content_data_path has been processed by recursive_search
+			if(content_data_path == null){
+				// final Toast t;
+				// t = Toast.makeText(myActivity, "Content folder not found! App exits...",
+				// 		Toast.LENGTH_LONG);
+				// t.show();
+
+				// Thread toast_thread = new Thread(){
+		  //           @Override
+		  //           public void run() {
+		  //                try {
+		  //                	while(!t.getView().isShown()){
+		  //                   	Thread.sleep(300);
+		  //           		}
+		  //           		Thread.sleep(4000);
+		  //                   System.exit(0);
+		  //               } catch (Exception e) {
+		  //                   e.printStackTrace();
+		  //               }
+		  //           }  
+		  //       };
+		  //       toast_thread.start();
+				return false;
+				//System.exit(0);
 			}
-			File targetFolder = new File(copied_content);
-			new fileMoving(sourceFile, targetFolder).execute();
-	   	}else{
-	   // 		Toast.makeText(myActivity, "For the first time installation, please insert a SD card with content folder named <ka-lite>. This app will be closed...",
-				// Toast.LENGTH_LONG).show();
-			System.exit(0);
-	   	}
+			System.out.println("movingFile universal: "+content_data_path);
+		}
+
+		File sourceFile = new File(moving);
+//	if(sourceFile.exists()){
+		
+		// String zipped_location = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test";
+		// File zipped = new File(zipped_location);
+
+		// Thread myThread = new Thread(new Runnable() {
+		//     @Override
+		//     public void run() {
+		//         try {
+		//         	while(!zipped.exists()){
+		// 				Thread.sleep(5000);
+		// 			}
+		//         } catch (InterruptedException e) {
+		//             e.printStackTrace();
+		//         }
+		//     }
+		// });
+		// myThread.start();
+
+		File targetFolder = new File(copied_content);
+//eli		new fileMoving(sourceFile, targetFolder).execute();
+		new fileMovingThreadUI(sourceFile, targetFolder).start_moving();
+
+		return true;
+  //  	}else{
+  //  // 		Toast.makeText(myActivity, "For the first time installation, please insert a SD card with content folder named <ka-lite>. This app will be closed...",
+		// 	// Toast.LENGTH_LONG).show();
+		// System.exit(0);
+  //  	}
+	}
+
+	public static class fileMovingThreadUI {
+		private File _targetFile;   
+		private File _destination;
+		public fileMovingThreadUI(File targetFile, File destination) {
+			_targetFile = targetFile;     
+			_destination = destination;      
+      	} 
+      	public void copyDir(File sourceLocation, File targetLocation){
+      		try{
+				if (sourceLocation.isDirectory()) {
+				    if (!targetLocation.exists()) {
+				        targetLocation.mkdir();
+				    }
+				    String[] children = sourceLocation.list();
+				    for (int i = 0; i < sourceLocation.listFiles().length; i++) {
+				        copyDir(new File(sourceLocation, children[i]),
+				                new File(targetLocation, children[i]));
+				    }
+				} else {
+				    InputStream in = new FileInputStream(sourceLocation);
+				    OutputStream out = new FileOutputStream(targetLocation);
+				    // Copy the bits from instream to outstream
+				    byte[] buf = new byte[1024];
+				    int len;
+				    while ((len = in.read(buf)) > 0) {
+				        out.write(buf, 0, len);
+				    }
+				    in.close();
+				    out.close();
+				}
+		    }catch(IOException ex){
+		        ex.printStackTrace(); 
+		    }
+      	}
+		
+		public void start_moving() {
+		   	copyDir(_targetFile, _destination);
+		   	System.out.println("momomo finished moving files");
+		}
 	}
 
 	public static void dirChecker(String dir) {
@@ -159,31 +260,24 @@ public class JavaHandler {
 	public static class fileMoving extends AsyncTask<Void, Integer, Integer> {
 		private File _targetFile;   
 		private File _destination;
-	//	private int per = 0;
 		public fileMoving(File targetFile, File destination) {
 			_targetFile = targetFile;     
 			_destination = destination;      
       	} 
-
       	public void copyDir(File sourceLocation, File targetLocation){
       		try{
 				if (sourceLocation.isDirectory()) {
 				    if (!targetLocation.exists()) {
 				        targetLocation.mkdir();
 				    }
-
 				    String[] children = sourceLocation.list();
 				    for (int i = 0; i < sourceLocation.listFiles().length; i++) {
-
 				        copyDir(new File(sourceLocation, children[i]),
 				                new File(targetLocation, children[i]));
 				    }
 				} else {
-
 				    InputStream in = new FileInputStream(sourceLocation);
-
 				    OutputStream out = new FileOutputStream(targetLocation);
-
 				    // Copy the bits from instream to outstream
 				    byte[] buf = new byte[1024];
 				    int len;
@@ -195,24 +289,13 @@ public class JavaHandler {
 				}
 		    }catch(IOException ex){
 		        ex.printStackTrace(); 
-		//       System.out.println("elieli error");
 		    }
       	}
 		
 		@Override
 		protected Integer doInBackground(Void... params) {
-			// File sourceLocation = new File(tobemoved);
-			// if(sourceLocation.exists()){
-			// 	File targetLocation = new File(outputFolder);
-		 //   		copyDir(sourceLocation, targetLocation);
-		 //   	}else{
-		 //   		Toast.makeText(myActivity, "For the first time installation, 
-		 //   			\n please insert a SD card with content folder named <ka-lite>. 
-		 //   			\n This app will be closed...",
-   // 				Toast.LENGTH_SHORT).show();
-   // 				System.exit(0);
-		 //   	}
 		   	copyDir(_targetFile, _destination);
+		   	System.out.println("momomo finished moving files");
 			return null;
 		}
 		protected void onProgressUpdate(Integer... progress) {
@@ -339,6 +422,12 @@ public class JavaHandler {
   //  		pd.setMessage("Page is loading...");
 	}
 
+	public void show_toast(String str){
+		Toast.makeText(myActivity, str, Toast.LENGTH_LONG).show();
+	}
+	// public static void static_show_toast(Activity act, String str){
+	// 	Toast.makeText(act, str, Toast.LENGTH_LONG).show();
+	// }
 	public void showWebView(){ 
 		progressBar = new ProgressBar(myActivity, null, android.R.attr.progressBarStyleHorizontal);
 		progressBar.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 10));
@@ -381,8 +470,13 @@ public class JavaHandler {
 	}
 
 	public void quitApp(){
+	public static void killApp(){
 		System.exit(0);
-		//myActivity.finish();
+	}
+
+	public static void displayInLogCat(String s){
+		System.out.println(s);
+	}
 	}
 
 	public boolean backPressed(){
