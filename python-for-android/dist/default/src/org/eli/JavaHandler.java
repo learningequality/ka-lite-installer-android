@@ -47,6 +47,15 @@ import java.io.OutputStreamWriter;
 
 import android.widget.Toast;
 import java.lang.Thread;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.app.FragmentManager;
+
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 
 
 public class JavaHandler {
@@ -55,6 +64,8 @@ public class JavaHandler {
 	MyWebView wv;
 	static boolean asus_switch = false;   //for faster development, skip moving file.
 	static String content_data_path;
+	SharedPreferences sharedpreferences;
+	Editor editor;
 
 	public static void unzipKaLite(){
 		String _fileLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite.zip";
@@ -428,7 +439,13 @@ public class JavaHandler {
 	// public static void static_show_toast(Activity act, String str){
 	// 	Toast.makeText(act, str, Toast.LENGTH_LONG).show();
 	// }
+
 	public void showWebView(){ 
+		sharedpreferences = myActivity.getSharedPreferences("MyPref", myActivity.MODE_MULTI_PROCESS);
+		editor = sharedpreferences.edit();
+		editor.putInt("live", 1);
+		editor.commit(); 
+
 		progressBar = new ProgressBar(myActivity, null, android.R.attr.progressBarStyleHorizontal);
 		progressBar.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 10));
 		// retrieve the top view of our application
@@ -469,7 +486,27 @@ public class JavaHandler {
         myActivity.setContentView(wv);
 	}
 
-	public void quitApp(){
+	public void quitDialog(){
+		AlertDialog.Builder builder = new AlertDialog.Builder(myActivity);
+        builder.setMessage("do you want to exit this app")
+              	.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
+                   	public void onClick(DialogInterface dialog, int id) {
+                   		// System.exit(0);
+                   		System.out.println("shshsh live 0");
+                   		editor.putInt("live", 0);
+						editor.commit(); 
+                   	}
+               	})
+               	.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                   	public void onClick(DialogInterface dialog, int id) {
+                       // User cancelled the dialog
+                   	}
+               	});
+        // Create the AlertDialog object and return it
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+	}
+
 	public static void killApp(){
 		System.exit(0);
 	}
@@ -477,23 +514,34 @@ public class JavaHandler {
 	public static void displayInLogCat(String s){
 		System.out.println(s);
 	}
+
+	public boolean whetherHomePage(){
+		// Toast.makeText(myActivity, "whetherHomePage: "+wv.getUrl(), Toast.LENGTH_SHORT).show();
+		if(wv.getUrl().equals("http://0.0.0.0:8008/")){
+			return true;
+		}else{
+			return false;
+		}
 	}
 
 	public boolean backPressed(){
-		Toast.makeText(myActivity, wv.getUrl(),
-   		Toast.LENGTH_SHORT).show();
-   		return true;
-
-		// if(wv.canGoBack()){
-		// 	//wv.goBack();
-		// 	return true;
-		// }else{
-		// 	return false;
-		// }
+		// Toast.makeText(myActivity, wv.getUrl(),
+  //  		Toast.LENGTH_SHORT).show();
+  //  		return true;
+		if(wv.canGoBack()){
+			//wv.goBack();
+			return true;
+		}else{
+			return false;
+		}
 	}
 
 	public void goBack(){
 		wv.goBack();
+	}
+
+	public void reloadFirstPage(){
+		wv.loadUrl("http://0.0.0.0:8008/");
 	}
 
 	private class MyWebChromeClient extends WebChromeClient{

@@ -13,10 +13,8 @@ from kivy.clock import Clock
 from kivy.logger import Logger
 
 from kalite_ui import KaliteUI
-
 import logging
 logging.root = Logger
-
 from service.main import Server
 
 import webbrowser
@@ -30,7 +28,11 @@ from kivy.base import EventLoop
 from kivy.uix.widget import Widget
 from kivy.clock import Clock  
 from jnius import autoclass, cast
+from jnius import PythonJavaClass, java_method
 from android.runnable import run_on_ui_thread
+
+from kivy.uix.button import Button
+from kivy.uix.popup import Popup
 
 WebView = autoclass('android.webkit.WebView')
 Window = autoclass('android.view.Window')
@@ -39,6 +41,7 @@ android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
 System = autoclass('java.lang.System')
 #MyWebChromeClient = autoclass('org.eli.MyWebChromeClient')
 JavaHandler = autoclass('org.eli.JavaHandler')
+#SharedPreferences = autoclass('android.content.SharedPreferences')
 
 class JavaHandle(Widget): 
     def  __init__(self, **kwargs):
@@ -48,6 +51,7 @@ class JavaHandle(Widget):
 
     @run_on_ui_thread   
     def create_webview(self, *args):    
+        #JavaHandler.displayInLogCat("catcat create_webview")
         self.java_handle = JavaHandler()
  #       self.java_handle.generateRSA()
        # self.java_handle.initWebView()
@@ -61,20 +65,29 @@ class JavaHandle(Widget):
         #JavaHandler.displayInLogCat("catcat move_content")
         JavaHandler.movingFile()
 
+    # def kill_app(self, server_is_running):
+    #     try:
+    #         if server_is_running:
+    #             from android import AndroidService
+    #             AndroidService().stop()
+    #         #App.get_running_app().stop()
+    #         self.java_handle.killApp()
+    #     except IOError:
+    #         print "cannot stop AndroidService normally"
+
     @run_on_ui_thread
     def go_to_previous(self, app, server_is_running):
         if self.java_handle.backPressed():
-            return False
-          #  self.java_handle.goBack()
+            if self.java_handle.whetherHomePage():
+                self.java_handle.quitDialog()
+            else:
+                self.java_handle.goBack()
         else:
-            try:
-                if server_is_running:
-                    from android import AndroidService
-                    AndroidService().stop()
-                #App.get_running_app().stop()
-                self.java_handle.quitApp()
-            except IOError:
-                print "cannot stop AndroidService normally"
+            self.java_handle.quitDialog()
+
+    @run_on_ui_thread
+    def quit_dialog(self):
+        self.java_handle.quitDialog()
 
     @run_on_ui_thread 
     def show_toast(self, string):
@@ -88,6 +101,24 @@ class JavaHandle(Widget):
     #     self.java_handle.generateRSA()
 
 #webview stuff
+
+class PythonSharedPreferenceChangeListener(PythonJavaClass):
+    __javainterfaces__ = ['android/content/SharedPreferences$OnSharedPreferenceChangeListener']
+
+    def __init__(self):
+        super(PythonSharedPreferenceChangeListener, self).__init__()
+
+    @java_method('(Landroid/content/SharedPreferences;Ljava/lang/String;)V')
+    def onSharedPreferenceChanged(self, sharedPref, key):
+        System.out.println("shshsh callback");
+        if sharedPref.getInt("live", 1) == 0:
+            try:
+                from android import AndroidService
+                AndroidService().stop()
+                JavaHandler.killApp()
+            except IOError:
+                print "cannot stop AndroidService normally"
+
 
 class ServerThread(threading.Thread, Server):
     def __init__(self, app, mwebview):
@@ -287,11 +318,14 @@ class KALiteApp(App):
         self.main_ui = KaliteUI(self)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         self.my_webview = JavaHandle()
+        self.back_pressed = System.currentTimeMillis()
    #     self.my_webview.create_RSA()
         # self.java_handle = JavaHandler()
         # self.java_handle.initWebView()
 
-        self.pref = android_activity.getSharedPreferences("MyPref", android_activity.MODE_PRIVATE)
+        self.pref = android_activity.getSharedPreferences("MyPref", android_activity.MODE_MULTI_PROCESS)
+        self.sharedpref_listener = PythonSharedPreferenceChangeListener()
+        self.pref.registerOnSharedPreferenceChangeListener(self.sharedpref_listener)
 
         return self.main_ui.get_root_Layout()
 
@@ -304,7 +338,7 @@ class KALiteApp(App):
         #         self.key_generated = True
         # except IOError:
         #     print "file has not been created yet"
-        if self.pref.getInt("MyPref", 0) == 1:
+        if self.pref.getInt("setup", 0) == 1:
             self.key_generated = True
 
         self.main_ui.add_loading_gif()
@@ -313,20 +347,18 @@ class KALiteApp(App):
         self.prepare_server()
         #self.kalite.start()
 
-    back_pressed = 0
-
     def hook_keyboard(self, window, key, *largs):
         if key == 27:  # BACK
+            #JavaHandler.displayInLogCat("backback data: " + str(self.back_pressed) + "  |  " + str(System.currentTimeMillis()))
+            if self.back_pressed + 500 > System.currentTimeMillis():
+                #JavaHandler.displayInLogCat("backback in 500")
+                self.my_webview.quit_dialog()
+            else:
+                #JavaHandler.displayInLogCat("backback else 500")
                 self.my_webview.go_to_previous(App, self.kalite.server_is_running)
-             #   return True
-            # if self.back_pressed + 500 > System.currentTimeMillis():
-            #     if self.kalite.server_is_running:
-            #         from android import AndroidService
-            #         AndroidService().stop()
-            #     App.get_running_app().stop()
-
-            # self.back_pressed = System.currentTimeMillis()
-    #        self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+            #JavaHandler.displayInLogCat("backback 2 currentTimeMillis")
+            self.back_pressed = System.currentTimeMillis()
+            #self.my_webview.go_to_previous(App, self.kalite.server_is_running)
         return True
 
     def on_pause(self):
