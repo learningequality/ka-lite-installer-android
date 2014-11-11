@@ -475,6 +475,9 @@ public class JavaHandler {
 
 		wv.setWebViewClient(new MyWebViewClient());
 		wv.setWebChromeClient(new MyWebChromeClient());
+
+//future		wv.addJavascriptInterface(new JavaScriptInterface(), "Android");
+		
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
 		ws.setPluginState(WebSettings.PluginState.ON);
@@ -562,6 +565,22 @@ public class JavaHandler {
 		wv.loadUrl("http://0.0.0.0:8008/");
 	}
 
+
+	public class JavaScriptInterface {
+		// private WebView jsWV;
+		// private Activity jsActivity;
+
+		// public JavaScriptInterface(WebView mwv, Activity jsa) {
+		//     jsWV = mwv;
+		//     jsActivity = jsa;
+		// }
+		public JavaScriptInterface() {
+		}
+		public void doSomeThing() {
+		}
+	}
+
+
 	private class MyWebChromeClient extends WebChromeClient{
 		@Override
 		public void onProgressChanged(WebView view, int progress) {
@@ -571,7 +590,6 @@ public class JavaHandler {
 
 			if(progress == 100){
 				progressBar.setVisibility(View.GONE);
-
             }
 		}
 	}
