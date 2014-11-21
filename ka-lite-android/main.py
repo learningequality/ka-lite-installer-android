@@ -54,10 +54,7 @@ class JavaHandle(Widget):
     @run_on_ui_thread
     def go_to_previous(self, app, server_is_running):
         if self.java_handle.backPressed():
-            if self.java_handle.whetherHomePage():
-                self.java_handle.quitDialog()
-            else:
-                self.java_handle.goBack()
+            self.java_handle.goBack()
         else:
             self.java_handle.quitDialog()
 
