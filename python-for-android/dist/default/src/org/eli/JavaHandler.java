@@ -110,6 +110,21 @@ public class JavaHandler {
 	    }
 	}
 
+	public static void movingDataSqlite(){
+		System.out.println("datadata sqlite in");
+		String data_sqlite_path = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite/kalite/database";
+		String data_sqlite_destination = Environment.getExternalStorageDirectory().getPath() + "/kalite_essential";
+		File data_sqlite_source = new File(data_sqlite_path);
+		File data_sqlite_destination_folder = new File(data_sqlite_destination);
+		if(!data_sqlite_destination_folder.exists()){
+			//data_sqlite_destination_folder.mkdir();
+			fileMovingThreadUI file_mover_1 = new fileMovingThreadUI(data_sqlite_source, data_sqlite_destination_folder);
+			file_mover_1.start_moving();
+			file_mover_1 = null;
+		}
+		System.out.println("datadata sqlite finished");
+	}
+
 	public static boolean movingFile(){
 		System.out.println("momomo movingFile start..");
 		String copied_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content";
@@ -361,6 +376,7 @@ public class JavaHandler {
             String content_data = null;
 
             String copied_sdcard_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content";
+            String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
 
             if(!asus_switch){
 	            content_root = "\nCONTENT_ROOT = \"" + copied_sdcard_content +"/content/\"";
@@ -384,6 +400,7 @@ public class JavaHandler {
             String gut ="CHANNEL = \"connectteaching\"" +
             		"\nLOAD_KHAN_RESOURCES = False" +
            // 		"\nLOCKDOWN = True" +   //jamie ask to add it, need to test
+            		database_path + 
             		content_root +
             		content_data +
             		"\nUSE_I18N = False" +

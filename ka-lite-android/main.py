@@ -155,11 +155,9 @@ class ServerThread(threading.Thread, Server):
 
         os.chdir(self.project_dir)
         if os.path.exists('ka-lite.zip'):
-            JavaHandler.unzipKaLite()
-    #         with ZipFile('ka-lite.zip', mode="r") as z:
-    # #jjj            z.extractall('ka-lite')
-    #             z.extractall('.')   #we can change here or change Aron's code
-    #         os.remove('ka-lite.zip')
+            if JavaHandler.unzipKaLite():
+                JavaHandler.movingDataSqlite()
+
         if not os.path.exists('ka-lite'):
             return 'fail'
 
