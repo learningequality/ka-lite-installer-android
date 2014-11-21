@@ -25,46 +25,34 @@ class _BoxLayout(BoxLayout):
 class KaliteUI(object):
 	def __init__(self, kaliteApp):
 		self.root_layout = GridLayout(cols=1)
-		logo_houlder = _BoxLayout(orientation='horizontal')
-		log_img = Image(source='horizontal-logo.png')
-		#log_img.pos_hint={'center_x': 0.1, 'center_y': .5}
-		logo_houlder.padding = [20,10,Window.width-250,0]
-		logo_houlder.add_widget(log_img)
-
-		self.root_layout.add_widget(logo_houlder)
+		logo_holder = _BoxLayout(orientation='horizontal')
+		logo_img = Image(source='horizontal-logo.png', size_hint_x=None, width=260)
+		#logo_img.pos_hint={'center_x': 0.1, 'center_y': .5}
+#		logo_holder.padding = [20,10,Window.width-250,0]
+		# logo_holder.padding = [10,10,Window.width/2 - 300,10]
+		logo_holder.padding = [10,10,10,10]
+		logo_holder.add_widget(logo_img)
 
 		#create BubbleButtons
-		content_reload_btn= Button(text='Reload Content', font_size=30
-		    , color=(0.14, 0.23, 0.25, 1), bold=True)
-		content_reload_btn.background_normal='green_button_up.png'
+		self.content_reload_btn= Button(text='Reload Content', size_hint_x=None, size_hint_y=None, size=(150, 40), font_size=18
+		    , pos_hint={'right': .1, 'center_y': 0.35}, color=(0.878, 0.941, 0.784, 1), bold=True)
+		#self.content_reload_btn.background_normal='green_button_up.png'
 		#content_reload_btn.background_down='button_down.png'
-		content_reload_btn.bind(on_press=kaliteApp.reload_content)
+		self.content_reload_btn.bind(on_press=kaliteApp.reload_content)
+		space_holder = _BoxLayout(orientation='horizontal', pos_hint={'x': .8})
+		logo_holder.add_widget(space_holder)
 
-		# btn1= Button(text='OpenBrowser', font_size=30
-		#     , color=(0.14, 0.23, 0.25, 1), bold=True)
-		# btn1.background_normal='green_button_up.png'
-		# #btn1.background_down='button_down.png'
-		# btn1.bind(on_press=kaliteApp.start_webview_bubblebutton)
+		# #Add items to bubble
+		# buttons_holder = _BoxLayout(orientation='horizontal')
+		# # buttons_holder.padding = [10,0,10,0]
+		# # buttons_holder.padding = [Window.width/2 - 500,25,10,5]
+		# buttons_holder.padding = [10,25,10,5]
+		# buttons_holder.add_widget(self.content_reload_btn)
 
-		# btn4= Button(text='StopServer', font_size=30
-		#     , color=(0.14, 0.23, 0.25, 1), bold=True)
-		# btn4.background_normal='green_button_up.png'
-		# btn4.bind(on_press=kaliteApp.stop_server)
-
-		# btn5= Button(text='StartServer', font_size=30
-		#     , color=(0.14, 0.23, 0.25, 1), bold=True)
-		# btn5.background_normal='green_button_up.png'
-		# btn5.bind(on_press=kaliteApp.start_server)
-
-		#Add items to bubble
-		buttons_holder = _BoxLayout(orientation='horizontal')
-		buttons_holder.padding = [10,0,10,0]
-		buttons_holder.add_widget(content_reload_btn)
-		# buttons_holder.add_widget(btn1)
-		# buttons_holder.add_widget(btn4)
-		# buttons_holder.add_widget(btn5)
-
-		self.root_layout.add_widget(buttons_holder)
+		logo_holder.add_widget(self.content_reload_btn)
+		logo_holder.spacing = [300, 0]
+		self.root_layout.add_widget(logo_holder)
+		#self.root_layout.add_widget(buttons_holder)
 
 		#image stuff
 		self.img_holder = BoxLayout(orientation='vertical', size=(200,200), size_hint=(1, None))
@@ -82,13 +70,16 @@ class KaliteUI(object):
 
 		self.progress_bar = ProgressBar()
 
-		self.server_box = BoxLayout(orientation='horizontal')
+		# self.server_box = BoxLayout(orientation='horizontal')
 		self.messages = BoxLayout(orientation='vertical')
 
 		self.root_layout.add_widget(self.messages)
-		self.root_layout.add_widget(self.server_box)
+		# self.root_layout.add_widget(self.server_box)
 		#self.root_layout.add_widget(text_input_holder)
 		self.root_layout.add_widget(self.progress_bar)
+
+	def disable_reload_bnt(self):
+		self.content_reload_btn.disabled = True
 
 	def get_root_Layout(self):
 		return self.root_layout
@@ -111,7 +102,7 @@ class KaliteUI(object):
 	# 	return 'threads=' + self.text_input.text
 
 	def start_progress_bar(self, anim_value):
-		self.anim = Animation(value = anim_value, duration = 10)
+		self.anim = Animation(value = anim_value, duration = 3)
 		self.anim.start(self.progress_bar)
 
 	def animation_bind(self, bindFunction):
