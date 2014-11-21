@@ -21,9 +21,6 @@ import webbrowser
 from kivy.core.window import Window
 from kivy.base import EventLoop 
 
-# import pdb
-# pdb.set_trace()
-
 #webview stuff
 from kivy.uix.widget import Widget
 from kivy.clock import Clock  
@@ -39,41 +36,20 @@ Window = autoclass('android.view.Window')
 WebViewClient = autoclass('android.webkit.WebViewClient')                                       
 android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
 System = autoclass('java.lang.System')
-#MyWebChromeClient = autoclass('org.eli.MyWebChromeClient')
 JavaHandler = autoclass('org.eli.JavaHandler')
-#SharedPreferences = autoclass('android.content.SharedPreferences')
 
 class JavaHandle(Widget): 
     def  __init__(self, **kwargs):
         super(JavaHandle, self).__init__(**kwargs)
-        #Clock.schedule_once(self.create_webview, 0)
         self.create_webview(**kwargs)
 
     @run_on_ui_thread   
     def create_webview(self, *args):    
-        #JavaHandler.displayInLogCat("catcat create_webview")
         self.java_handle = JavaHandler()
- #       self.java_handle.generateRSA()
-       # self.java_handle.initWebView()
 
     @run_on_ui_thread 
     def run_webview(self):
         self.java_handle.showWebView()
-
-    @run_on_ui_thread 
-    def move_content(self):
-        #JavaHandler.displayInLogCat("catcat move_content")
-        JavaHandler.movingFile()
-
-    # def kill_app(self, server_is_running):
-    #     try:
-    #         if server_is_running:
-    #             from android import AndroidService
-    #             AndroidService().stop()
-    #         #App.get_running_app().stop()
-    #         self.java_handle.killApp()
-    #     except IOError:
-    #         print "cannot stop AndroidService normally"
 
     @run_on_ui_thread
     def go_to_previous(self, app, server_is_running):
@@ -96,9 +72,6 @@ class JavaHandle(Widget):
     @run_on_ui_thread
     def reload_first_page(self):
         self.java_handle.reloadFirstPage()
-
-    # def create_RSA(self):
-    #     self.java_handle.generateRSA()
 
 #webview stuff
 
@@ -232,11 +205,7 @@ class ServerThread(threading.Thread, Server):
 
 
     def generate_keys(self):
-        #from config.models import Settings
-        #if Settings.get('private_key'):
-        #    return 'key exists'
         JavaHandler.generateRSA()
-        #self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
 
     def create_superuser(self):
         from django.contrib.auth.models import User
@@ -330,7 +299,6 @@ class KALiteApp(App):
     # to avoid messing with other KA Lite installations
     server_port = '8008'
 
-    progress_tracking = 0
     server_state = False
     thread_num = 'threads=18'
     key_generated = False
@@ -340,9 +308,6 @@ class KALiteApp(App):
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         self.my_webview = JavaHandle()
         self.back_pressed = System.currentTimeMillis()
-   #     self.my_webview.create_RSA()
-        # self.java_handle = JavaHandler()
-        # self.java_handle.initWebView()
 
         self.pref = android_activity.getSharedPreferences("MyPref", android_activity.MODE_MULTI_PROCESS)
         self.sharedpref_listener = PythonSharedPreferenceChangeListener()
@@ -483,27 +448,6 @@ class KALiteApp(App):
         self.main_ui.start_progress_bar(self.progress_tracking)
         self.schedule('schedule_reload_content', 'Reloading the content')
 
-
-    # def start_webview(self, instance, widget):
-    #     url = 'http://0.0.0.0:8008/'
-    #     webbrowser.open(url)
-
-    # def start_webview_button(self):
-    #     url = 'http://0.0.0.0:8008/'
-    #     webbrowser.open(url)
-
-    # def start_webview_bubblebutton(self, widget):
-    #     self.my_webview.run_webview()
-   #     self.main_ui.root_layout.add_widget(self.my_webview.run_webview()) # webview stuff
-   #     url = 'http://0.0.0.0:8008/'
-   #     webbrowser.open(url)
-
-    # def stop_server(self, widget):
-    #     if self.kalite.server_is_running:
-    #         self.kalite.schedule('stop_server', 'Stop server')
-    #     else:
-    #         self.activity_label = Label(text="no running server", color=(0.14, 0.23, 0.25, 1))
-    #         self.main_ui.add_messages(self.activity_label)
 
     @clock_callback
     def start_service_part(self, threadnum):
