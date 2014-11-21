@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="{{args.package}}"
-          android:versionCode="{{args.numeric_version}}"
+          android:versionCode="{{1202}}"
           android:versionName="{{args.version}}"
           android:installLocation="{{ args.install_location }}"
           >
@@ -95,14 +95,16 @@
 	</receiver>
 	{% endif %}
 
+
   </application>
 
-  <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="19"/>
+  <uses-sdk android:minSdkVersion="14" android:targetSdkVersion="19"/>
   {% if args.wakelock %}
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   {% endif %}
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
   {% for perm in args.permissions %}
   {% if '.' in perm %}
