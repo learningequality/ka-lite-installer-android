@@ -50,7 +50,6 @@ import java.lang.Thread;
 //import org.jshybugger.DebugServiceClient;
 
 //webview
-import android.webkit.WebChromeClient.CustomViewCallback;
 import android.widget.FrameLayout;
 import android.widget.VideoView;
 import android.media.MediaPlayer;
@@ -62,6 +61,8 @@ import android.view.ViewGroup;
 import android.graphics.Canvas;
 import android.net.Uri;
 import android.content.Intent;
+import android.net.http.SslError;
+import android.webkit.SslErrorHandler;
 
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -78,19 +79,15 @@ public class JavaHandler {
 	static Activity myActivity = (Activity)PythonActivity.mActivity;
 	ProgressBar progressBar;
 	WebView wv;
-	boolean webviewRedraw = true;
 	static boolean asus_switch = false;   //for faster development, skip moving file.
 	static String content_data_path;
 	SharedPreferences sharedpreferences;
 	Editor editor;
 
-	public static void unzipKaLite(){
+	public static boolean unzipKaLite(){
 		String _fileLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite.zip";
 	    String _targetLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/.";
-	    unzipThreadUI(_fileLocation, _targetLocation);
-	    // if(!asus_switch){
-	    // 	movingFile();
-	    // }
+	    return unzipThreadUI(_fileLocation, _targetLocation);
 	}
 
 	public static void recursive_search(File root){
@@ -110,6 +107,16 @@ public class JavaHandler {
 	    }
 	}
 
+	public static boolean isContentExist(){
+		String content_folder_path = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_kalite_content";
+		File contentFolder = new File(content_folder_path);
+		if(contentFolder.exists()){
+			return true;
+		}else{
+			return false;
+		}
+	}
+
 	public static void movingDataSqlite(){
 		System.out.println("datadata sqlite in");
 		String data_sqlite_path = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite/kalite/database";
@@ -127,7 +134,7 @@ public class JavaHandler {
 
 	public static boolean movingFile(){
 		System.out.println("momomo movingFile start..");
-		String copied_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content";
+		String copied_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_kalite_content";
 	    String moving = "null";
 	    File dir_ainol = new File("/mnt/sd-ext/ka-lite");//this folder has to have unique name
         File dir_nexus7 = new File("/storage/emulated/0/UNICEF");//this folder has to have unique name
@@ -145,62 +152,43 @@ public class JavaHandler {
 			recursive_search(_root);
 			moving = content_data_path;  //content_data_path has been processed by recursive_search
 			if(content_data_path == null){
-				// final Toast t;
-				// t = Toast.makeText(myActivity, "Content folder not found! App exits...",
-				// 		Toast.LENGTH_LONG);
-				// t.show();
 
-				// Thread toast_thread = new Thread(){
-		  //           @Override
-		  //           public void run() {
-		  //                try {
-		  //                	while(!t.getView().isShown()){
-		  //                   	Thread.sleep(300);
-		  //           		}
-		  //           		Thread.sleep(4000);
-		  //                   System.exit(0);
-		  //               } catch (Exception e) {
-		  //                   e.printStackTrace();
-		  //               }
-		  //           }  
-		  //       };
-		  //       toast_thread.start();
 				return false;
-				//System.exit(0);
 			}
 			System.out.println("movingFile universal: "+content_data_path);
 		}
 
 		File sourceFile = new File(moving);
-//	if(sourceFile.exists()){
-		
-		// String zipped_location = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test";
-		// File zipped = new File(zipped_location);
 
-		// Thread myThread = new Thread(new Runnable() {
-		//     @Override
-		//     public void run() {
-		//         try {
-		//         	while(!zipped.exists()){
-		// 				Thread.sleep(5000);
-		// 			}
-		//         } catch (InterruptedException e) {
-		//             e.printStackTrace();
-		//         }
-		//     }
-		// });
-		// myThread.start();
+		File destinyFolder = new File(copied_content);
 
-		File targetFolder = new File(copied_content);
-//eli		new fileMoving(sourceFile, targetFolder).execute();
-		new fileMovingThreadUI(sourceFile, targetFolder).start_moving();
+		if(destinyFolder.exists()){
+			deleteDirectory(destinyFolder);
+		}
+
+		fileMovingThreadUI file_mover_2 = new fileMovingThreadUI(sourceFile, destinyFolder);
+		file_mover_2.start_moving();
+		file_mover_2 = null;
 
 		return true;
-  //  	}else{
-  //  // 		Toast.makeText(myActivity, "For the first time installation, please insert a SD card with content folder named <ka-lite>. This app will be closed...",
-		// 	// Toast.LENGTH_LONG).show();
-		// System.exit(0);
-  //  	}
+	}
+
+	public static boolean deleteDirectory(File tobe_delete) {
+	    if( tobe_delete.exists() ) {
+		   	File[] files = tobe_delete.listFiles();
+		  	if (files == null) {
+		       	return true;
+		  	}
+		  	for(File f: files){
+		  		if(f.isDirectory()) {
+		       		deleteDirectory(f);
+		      	}
+		      	else {
+		           f.delete();
+		       	}
+		  	}
+		}
+		return( tobe_delete.delete() );
 	}
 
 	public static class fileMovingThreadUI {
@@ -210,6 +198,7 @@ public class JavaHandler {
 			_targetFile = targetFile;     
 			_destination = destination;      
       	} 
+
       	public void copyDir(File sourceLocation, File targetLocation){
       		try{
 				if (sourceLocation.isDirectory()) {
@@ -232,6 +221,7 @@ public class JavaHandler {
 				    }
 				    in.close();
 				    out.close();
+				    System.out.println("momomo close");
 				}
 		    }catch(IOException ex){
 		        ex.printStackTrace(); 
@@ -251,7 +241,7 @@ public class JavaHandler {
 		}
 	}
 
-	public static void unzipThreadUI(String _zipFile, String _targetLocation){
+	public static boolean unzipThreadUI(String _zipFile, String _targetLocation){
 		//create target location folder if not exist
 		dirChecker(_targetLocation);
 		byte[] buffer = new byte[1024];
@@ -260,16 +250,12 @@ public class JavaHandler {
 			ZipInputStream zin = new ZipInputStream(fin);
 			ZipEntry ze = zin.getNextEntry();
 			while (ze != null) {
-			//	System.out.println("elieli while 1: "+ ze.getName());
 				//create dir if required while unzipping
 				if (ze.isDirectory()) {
-				//	System.out.println("elieli while dir");
 					dirChecker(_targetLocation + File.separator + ze.getName());
 				} else {
-				//	System.out.println("elieli while file: " + _targetLocation + File.separator + ze.getName());
 					File newfile = new File(_targetLocation + File.separator + ze.getName());						
 					File parentDir = new File(newfile.getParent());
-				//	System.out.println("elieli parent: " + newfile.getParent());
 					if(!parentDir.exists()){
 						parentDir.mkdirs();
 					}
@@ -280,7 +266,6 @@ public class JavaHandler {
 		            while ((len_ui = zin.read(buffer)) > 0) {
 		            	fout.write(buffer, 0, len_ui);
 		            }
-			//		System.out.println("elieli close nentry");
 					zin.closeEntry();
 					fout.close();
 				}
@@ -288,57 +273,11 @@ public class JavaHandler {
 			}
 			System.out.println("elieli done");
 			zin.close();
-			new File(_zipFile).delete(); 
+			return new File(_zipFile).delete(); 
 		} catch (Exception e) {
 			System.out.println(e);
 		}
-	}
-
-//don't use this AsyncTask because environment setup need to wait unzip finished 
-	public static class fileMoving extends AsyncTask<Void, Integer, Integer> {
-		private File _targetFile;   
-		private File _destination;
-		public fileMoving(File targetFile, File destination) {
-			_targetFile = targetFile;     
-			_destination = destination;      
-      	} 
-      	public void copyDir(File sourceLocation, File targetLocation){
-      		try{
-				if (sourceLocation.isDirectory()) {
-				    if (!targetLocation.exists()) {
-				        targetLocation.mkdir();
-				    }
-				    String[] children = sourceLocation.list();
-				    for (int i = 0; i < sourceLocation.listFiles().length; i++) {
-				        copyDir(new File(sourceLocation, children[i]),
-				                new File(targetLocation, children[i]));
-				    }
-				} else {
-				    InputStream in = new FileInputStream(sourceLocation);
-				    OutputStream out = new FileOutputStream(targetLocation);
-				    // Copy the bits from instream to outstream
-				    byte[] buf = new byte[1024];
-				    int len;
-				    while ((len = in.read(buf)) > 0) {
-				        out.write(buf, 0, len);
-				    }
-				    in.close();
-				    out.close();
-				}
-		    }catch(IOException ex){
-		        ex.printStackTrace(); 
-		    }
-      	}
-		
-		@Override
-		protected Integer doInBackground(Void... params) {
-		   	copyDir(_targetFile, _destination);
-		   	System.out.println("momomo finished moving files");
-			return null;
-		}
-		protected void onProgressUpdate(Integer... progress) {
-	//		progressBar.setProgress(per); //Since it's an inner class, Bar should be able to be called directly
-	    }
+		return false;
 	}
 
 	public static void generateRSA(){
@@ -353,53 +292,26 @@ public class JavaHandler {
             byte[] publicKeyBytes = public_key.getEncoded();
             byte[] privateKeyBytes = priavte_key.getEncoded();
             
-          //Convert Public key to String
-          //   String pubKeyStr = Base64.encodeToString(publicKeyBytes, Base64.DEFAULT);
-            
-          //   String priKeyStr = "-----BEGIN RSA PRIVATE KEY-----\n" 
-        		// + Base64.encodeToString(privateKeyBytes, Base64.DEFAULT)
-        		// + "-----END RSA PRIVATE KEY-----";
-
-            // String fileLocation = Environment.getExternalStorageDirectory().getPath() 
-            // 	+ "/org.kalite.test/ka-lite/kalite/database/";
-            // File myPublicRSA = new File(fileLocation, "myPublicRSA");
-            // File myPrivateRSA = new File(fileLocation, "myPrivateRSA");
-
-            // Writer writer1= new BufferedWriter(new FileWriter(myPublicRSA));
-            // writer1.write(pubKeyStr);
-            // writer1.close();
-            
-            // Writer writer2= new BufferedWriter(new FileWriter(myPrivateRSA));
-            // writer2.write(priKeyStr);
-            // writer2.close();
             String content_root = null;
             String content_data = null;
 
-            String copied_sdcard_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content";
+            String copied_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_kalite_content";
             String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
 
             if(!asus_switch){
-	            content_root = "\nCONTENT_ROOT = \"" + copied_sdcard_content +"/content/\"";
-	            content_data = "\nCONTENT_DATA_PATH = \"" + copied_sdcard_content +"/data/\"";
+	            content_root = "\nCONTENT_ROOT = \"" + copied_content +"/content/\"";
+	            content_data = "\nCONTENT_DATA_PATH = \"" + copied_content +"/data/\"";
 	        }else{
 	            content_root = "\nCONTENT_ROOT = \""  +"/Removable/MicroSD/ka-lite/content/\"";
 	            content_data = "\nCONTENT_DATA_PATH = \"" +"/Removable/MicroSD/ka-lite/data/\"";
 	        }
 
-			// if(dir_ainol.exists()) {
-			// 	content_root = "\nCONTENT_ROOT = \"/mnt/sd-ext/ka-lite/content/\"";
-			// 	content_data = "\nCONTENT_DATA_PATH = \"/mnt/sd-ext/ka-lite/data/\"";
-			// }else if(dir_asus_memo.exists()){
-			// 	content_root = "\nCONTENT_ROOT = \"/Removable/MicroSD/ka-lite/content/\"";
-			// 	content_data = "\nCONTENT_DATA_PATH = \"/Removable/MicroSD/ka-lite/data/\"";
-			// }else if(dir_nexus7.exists()){
-			// 	content_root = "\nCONTENT_ROOT = \"/storage/emulated/0/UNICEF/content/\"";
-			// 	content_data = "\nCONTENT_DATA_PATH = \"/storage/emulated/0/UNICEF/data/\"";
-			// }
 
             String gut ="CHANNEL = \"connectteaching\"" +
             		"\nLOAD_KHAN_RESOURCES = False" +
-           // 		"\nLOCKDOWN = True" +   //jamie ask to add it, need to test
+            		"\nLOCKDOWN = True" +   //jamie ask to add it, need to test
+            		"\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
+            		"\nPDFJS = False" +
             		database_path + 
             		content_root +
             		content_data +
@@ -447,9 +359,7 @@ public class JavaHandler {
 	public void show_toast(String str){
 		Toast.makeText(myActivity, str, Toast.LENGTH_LONG).show();
 	}
-	// public static void static_show_toast(Activity act, String str){
-	// 	Toast.makeText(act, str, Toast.LENGTH_LONG).show();
-	// }
+
 
 	public void showWebView(){ 
 		sharedpreferences = myActivity.getSharedPreferences("MyPref", myActivity.MODE_MULTI_PROCESS);
@@ -462,74 +372,50 @@ public class JavaHandler {
 		// retrieve the top view of our application
 		final FrameLayout decorView = (FrameLayout) myActivity.getWindow().getDecorView();
 		decorView.addView(progressBar);
-//for nexus 7 only
-		// if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-		//     WebView.setWebContentsDebuggingEnabled(true);
-		// }
+
 		String deviceName = Build.MODEL;
 		String deviceMan = Build.MANUFACTURER;
 
-		if(deviceName.equals("ME172V") && deviceMan.equals("asus")){
-			webviewRedraw = true;
-			// Toast.makeText(myActivity, "ASUS",
-   //  				Toast.LENGTH_SHORT).show();
+		RelativeLayout rlayout=new RelativeLayout(myActivity);
+		RelativeLayout.LayoutParams rl= new RelativeLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT);
+		rlayout.setLayoutParams(rl);
+		wv = new MyWebView(myActivity);
+		// wv.setScrollContainer(true);
+		// RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)wv.getLayoutParams();
+		// params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+
+
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+			wv.setWebContentsDebuggingEnabled(true);
 		}
-
-		if(webviewRedraw){
-			wv = new MyWebView(myActivity);
-		}else{
-			wv = new WebView(myActivity);
-		}
-
-
-		if (Build.VERSION.SDK_INT >= 19 || webviewRedraw) {
-		    wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-		}       
-		else {
-		    wv.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-		}
-
-//if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-		//wv.setWebContentsDebuggingEnabled(true);
-//		}
-
-		wv.setWebViewClient(new MyWebViewClient());
-		wv.setWebChromeClient(new MyWebChromeClient());
-
-//future		wv.addJavascriptInterface(new JavaScriptInterface(), "Android");
 		
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
+
+
+		wv.setWebChromeClient(new MyWebChromeClient());
+		wv.setWebViewClient(new MyWebViewClient());
+		wv.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+		// wv.setDrawingCacheBackgroundColor(Color.TRANSPARENT);
+
 		ws.setPluginState(WebSettings.PluginState.ON);
-	//	ws.setSupportMultipleWindows(true);
-	//	ws.setJavaScriptCanOpenWindowsAutomatically(true);
-	//	ws.setAllowFileAccess(true);
-	//	ws.setAllowContentAccess(true);
 
-		ws.setDatabaseEnabled(true);
-		//enable to use "window.localStorage['my']='hello1'", in webview js on >= android 2.0
-		ws.setDomStorageEnabled(true);
+		// ws.setDatabaseEnabled(true);
+		// ws.setDomStorageEnabled(true);
 
-		//if no set or wrong path, variables disappear on killed
-		ws.setDatabasePath("/data/data/"+myActivity.getPackageName()+"/databases/"); 
+		// ws.setDatabasePath("/data/data/"+myActivity.getPackageName()+"/databases/"); 
 		wv.loadUrl("http://0.0.0.0:8008/");
 		ws.setRenderPriority(WebSettings.RenderPriority.HIGH);
-	//	ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
-		ws.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-
-		// LinearLayout workaround = new LinearLayout(myActivity);
-		// workaround.setBackgroundColor(Color.TRANSPARENT);
-		// wv.addView(workaround, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-//		DebugServiceClient.attachWebView(wv, myActivity);
-
-      //  wv.loadUrl(DebugServiceClient.getDebugUrl("http://0.0.0.0:8008"));
-	//	wv.loadUrl("http://0.0.0.0:8008");
-        myActivity.setContentView(wv);
+		// ws.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+		ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
+		
+		rlayout.addView(wv, new RelativeLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+        myActivity.setContentView(rlayout);
 	}
 
 	public void quitDialog(){
 		AlertDialog.Builder builder = new AlertDialog.Builder(myActivity);
-        builder.setMessage("do you want to exit this app")
+        builder.setMessage("Do you want to exit this app ?")
               	.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
                    	public void onClick(DialogInterface dialog, int id) {
                    		// System.exit(0);
@@ -557,7 +443,6 @@ public class JavaHandler {
 	}
 
 	public boolean whetherHomePage(){
-		// Toast.makeText(myActivity, "whetherHomePage: "+wv.getUrl(), Toast.LENGTH_SHORT).show();
 		if(wv.getUrl().equals("http://0.0.0.0:8008/")){
 			return true;
 		}else{
@@ -566,11 +451,7 @@ public class JavaHandler {
 	}
 
 	public boolean backPressed(){
-		// Toast.makeText(myActivity, wv.getUrl(),
-  //  		Toast.LENGTH_SHORT).show();
-  //  		return true;
 		if(wv.canGoBack()){
-			//wv.goBack();
 			return true;
 		}else{
 			return false;
@@ -584,22 +465,6 @@ public class JavaHandler {
 	public void reloadFirstPage(){
 		wv.loadUrl("http://0.0.0.0:8008/");
 	}
-
-
-	public class JavaScriptInterface {
-		// private WebView jsWV;
-		// private Activity jsActivity;
-
-		// public JavaScriptInterface(WebView mwv, Activity jsa) {
-		//     jsWV = mwv;
-		//     jsActivity = jsa;
-		// }
-		public JavaScriptInterface() {
-		}
-		public void doSomeThing() {
-		}
-	}
-
 
 	private class MyWebChromeClient extends WebChromeClient{
 		@Override
@@ -615,25 +480,35 @@ public class JavaHandler {
 	}
 
 	private class MyWebViewClient extends WebViewClient {
+		@Override
+        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            super.onReceivedSslError(view, handler, error);
+           //Error happens here and returns an empty page.
+            handler.proceed();
+        }
+
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            // view.loadUrl(url);
-            // return super.shouldOverrideUrlLoading(view, url);
+        	System.out.println("fufufu: " + url);
             if(url.endsWith(".pdf")){
-            	String content_path = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_sdcard_content/content/";
+            	String content_path = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_kalite_content/content/";
             	String[] parts = url.split("/");
             	String pdf_path = content_path + parts[parts.length - 1];
-            	Toast.makeText(myActivity, pdf_path, Toast.LENGTH_LONG).show();
             	File pdf_file = new File(pdf_path);
             	Uri pdf_uri = Uri.fromFile(pdf_file);
-            	//Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             	Intent intent = new Intent(Intent.ACTION_VIEW);
             	intent.setDataAndType(pdf_uri, "application/pdf");
            // 	intent.setPackage("com.adobe.reader");
             //	intent.setType("application/pdf");
         		myActivity.startActivity(intent);
             	return true;
-            }else{
+            }
+            // else if(url.equals("http://0.0.0.0:8008/securesync/logout/")){
+            // 	System.out.println("fufufu:  logout  in");
+            // 	view.loadUrl("http://0.0.0.0:8008/");
+            // 	return false;
+            // }
+            else{
             	view.loadUrl(url);
             	return false;
             }
@@ -644,20 +519,10 @@ public class JavaHandler {
 
 	    public MyWebView(Context context) {
 	        super(context);
-	        // TODO Auto-generated constructor stub
-	    }
-
-	    @Override
-	    public void onDraw(Canvas canvas){
-	    	// if(webviewRedraw){
-	     //    	this.invalidate();
-	     //    } 
-	    	this.invalidate();
-	        super.onDraw(canvas);
 	    }
 
 	    private long lastMoveEventTime = -1;
-	    private int eventTimeInterval = 40;
+	    private int eventTimeInterval = 60;
 
 	    @Override
 	    public boolean onTouchEvent(MotionEvent ev) {

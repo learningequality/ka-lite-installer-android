@@ -84,7 +84,11 @@ class PythonSharedPreferenceChangeListener(PythonJavaClass):
         if sharedPref.getInt("live", 1) == 0:
             try:
                 from android import AndroidService
+                JavaHandler.displayInLogCat("cdcdcd share1")
                 AndroidService().stop()
+                JavaHandler.displayInLogCat("cdcdcd share2")
+                time.sleep(0.3)
+                JavaHandler.displayInLogCat("cdcdcd share3")
                 JavaHandler.killApp()
             except IOError:
                 print "cannot stop AndroidService normally"
@@ -189,12 +193,27 @@ class ServerThread(threading.Thread, Server):
         self.execute_manager(self.settings, ['manage.py', 'migrate', '--merge'])
 
     #cannot run on ui thread, otherwise it will not show on the schedule page.
-    def schedule_reload_content(self):
+    def schedule_load_content(self):
         if JavaHandler.movingFile():
             return 'Loading finished'
         else:
-            #JavaHandler.static_show_toast(android_activity, 'Content folder not found! App exits...')
-            self.web_view.show_toast('Content folder not found! App exits...')
+            self.web_view.show_toast('Content  folder  not  found!  Exiting...')
+            if self.server_is_running:
+                from android import AndroidService
+                AndroidService().stop()
+            time.sleep(4)
+            JavaHandler.killApp()
+
+    def schedule_reload_content(self):
+        if self.server_is_running:
+            time.sleep(2)            
+            self.stop_server()
+        if JavaHandler.movingFile():
+            self.setup_environment()
+            self.start_server('threads=18')
+            return 'Loading finished'
+        else:
+            self.web_view.show_toast('Content  folder  not  found!  Exiting...')
             time.sleep(4)
             JavaHandler.killApp()
 
@@ -299,6 +318,7 @@ class KALiteApp(App):
     key_generated = False
 
     def build(self):
+        self.progress_tracking = 0
         self.main_ui = KaliteUI(self)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         self.my_webview = JavaHandle()
@@ -330,16 +350,12 @@ class KALiteApp(App):
 
     def hook_keyboard(self, window, key, *largs):
         if key == 27:  # BACK
-            #JavaHandler.displayInLogCat("backback data: " + str(self.back_pressed) + "  |  " + str(System.currentTimeMillis()))
-            if self.back_pressed + 500 > System.currentTimeMillis():
-                #JavaHandler.displayInLogCat("backback in 500")
-                self.my_webview.quit_dialog()
-            else:
-                #JavaHandler.displayInLogCat("backback else 500")
-                self.my_webview.go_to_previous(App, self.kalite.server_is_running)
-            #JavaHandler.displayInLogCat("backback 2 currentTimeMillis")
-            self.back_pressed = System.currentTimeMillis()
-            #self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+            # if self.back_pressed + 500 > System.currentTimeMillis():
+            #     self.my_webview.quit_dialog()
+            # else:
+            #     self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+            # self.back_pressed = System.currentTimeMillis()
+            self.my_webview.go_to_previous(App, self.kalite.server_is_running)
         return True
 
     def on_pause(self):
@@ -373,7 +389,7 @@ class KALiteApp(App):
             # if hasattr(self, 'activity_label'):
             #     self.main_ui.remove_messages(self.activity_label)
 
-            self.activity_label.text = self.activity_label.text + message
+            # self.activity_label.text = self.activity_label.text + message
 
             self.progress_tracking += 7.5
             self.main_ui.start_progress_bar(self.progress_tracking)
@@ -405,22 +421,21 @@ class KALiteApp(App):
 
         self.schedule = self.kalite.schedule
         self.schedule('extract_kalite', 'Extracting ka-lite archive')
-        # self.my_webview.move_content()
+
+        if not self.key_generated:
+            self.main_ui.disable_reload_bnt()
+            # self.schedule('schedule_load_content', 'Loading the content')
+            self.schedule('generate_keys', 'Generating keys')
+
         self.schedule('setup_environment', 'Setting up environment')
-        #schedule('python_version', 'Checking Python version')
         self.schedule('import_django', 'Trying to import Django')
         if not self.key_generated:
-    #jjj    if 2>3:
-    #jjj        schedule('syncdb', 'Preparing database')
-            #self.my_webview.move_content()
-            self.schedule('generate_keys', 'Generating keys')
+            # self.main_ui.disable_reload_bnt()
+            # self.schedule('generate_keys', 'Generating keys')
             self.schedule('create_superuser', 'Creating admin user')
-            self.schedule('schedule_reload_content', 'Loading the content')
-            #create a setting file
-            # settings_path = self.user_data_dir
-            # my_setting_file = open(settings_path+'/mySettings.txt', 'w')
-            # my_setting_file.write('allset')
-            # my_setting_file.close()
+            self.schedule('schedule_load_content', 'Loading the content')
+            # self.schedule('setup_environment', 'Setting up environment')
+     
             self.editor = self.pref.edit()
             self.editor.putInt("setup", 1)
             self.editor.apply()
@@ -438,7 +453,7 @@ class KALiteApp(App):
             self.kalite.schedule('start_server', description, threadnum)
 
     def reload_content(self, widget):
-        # self.my_webview.move_content()
+        self.main_ui.disable_reload_bnt()
         self.progress_tracking -= 30
         self.main_ui.start_progress_bar(self.progress_tracking)
         self.schedule('schedule_reload_content', 'Reloading the content')

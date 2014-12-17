@@ -6,9 +6,23 @@ from kivy.uix.image import Image
 from kivy.graphics import Color, Rectangle
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.core.window import Window
+from kivy.uix.dropdown import DropDown
 Window.clearcolor = (1, 1, 1, 1)
+
+class MyButton(Button):
+	def __init__(self, **kwargs):
+		super(MyButton, self).__init__(**kwargs)
+		with self.canvas.before:
+		    Color(0.778, 0.841, 0.884)
+		    self.rect = Rectangle(size=self.size, pos=self.pos)
+		self.bind(size=self._update_rect, pos=self._update_rect)
+
+	def _update_rect(self, instance, value):
+		self.rect.pos = instance.pos
+		self.rect.size = instance.size
 
 class _BoxLayout(BoxLayout):
 	def __init__(self, **kwargs):
@@ -24,9 +38,14 @@ class _BoxLayout(BoxLayout):
 
 class KaliteUI(object):
 	def __init__(self, kaliteApp):
+		dropdown = DropDown()
+		dropdown_btn = MyButton(text='...', size_hint_x=None, size_hint_y=None, size=(150, 40), font_size=18
+		    , color=(1, 1, 1, 1), bold=True)
+		dropdown_btn.bind(on_release=dropdown.open)
+
 		self.root_layout = GridLayout(cols=1)
 		logo_holder = _BoxLayout(orientation='horizontal')
-		logo_img = Image(source='horizontal-logo.png', size_hint_x=None, width=260)
+		logo_img = Image(source='horizontal-logo.png', size_hint_x=None, width=360)
 		#logo_img.pos_hint={'center_x': 0.1, 'center_y': .5}
 #		logo_holder.padding = [20,10,Window.width-250,0]
 		# logo_holder.padding = [10,10,Window.width/2 - 300,10]
@@ -35,7 +54,7 @@ class KaliteUI(object):
 
 		#create BubbleButtons
 		self.content_reload_btn= Button(text='Reload Content', size_hint_x=None, size_hint_y=None, size=(150, 40), font_size=18
-		    , pos_hint={'right': .1, 'center_y': 0.35}, color=(0.878, 0.941, 0.784, 1), bold=True)
+		    , color=(1, 1, 1, 1), bold=True)
 		#self.content_reload_btn.background_normal='green_button_up.png'
 		#content_reload_btn.background_down='button_down.png'
 		self.content_reload_btn.bind(on_press=kaliteApp.reload_content)
@@ -43,13 +62,14 @@ class KaliteUI(object):
 		logo_holder.add_widget(space_holder)
 
 		# #Add items to bubble
-		# buttons_holder = _BoxLayout(orientation='horizontal')
+		buttons_holder = AnchorLayout(anchor_x='center', anchor_y='center')
 		# # buttons_holder.padding = [10,0,10,0]
 		# # buttons_holder.padding = [Window.width/2 - 500,25,10,5]
 		# buttons_holder.padding = [10,25,10,5]
-		# buttons_holder.add_widget(self.content_reload_btn)
+	#	buttons_holder.add_widget(self.content_reload_btn)
 
-		logo_holder.add_widget(self.content_reload_btn)
+		dropdown.add_widget(self.content_reload_btn)
+		logo_holder.add_widget(dropdown_btn)
 		logo_holder.spacing = [300, 0]
 		self.root_layout.add_widget(logo_holder)
 		#self.root_layout.add_widget(buttons_holder)
@@ -74,6 +94,7 @@ class KaliteUI(object):
 		self.messages = BoxLayout(orientation='vertical')
 
 		self.root_layout.add_widget(self.messages)
+		self.root_layout.add_widget(buttons_holder)
 		# self.root_layout.add_widget(self.server_box)
 		#self.root_layout.add_widget(text_input_holder)
 		self.root_layout.add_widget(self.progress_bar)

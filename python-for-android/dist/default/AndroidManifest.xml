@@ -16,7 +16,7 @@
         
         />
 
-  <application android:label="@string/appName"
+  <application android:label="Connect.Teaching"
                android:icon="@drawable/icon"
 			   android:hardwareAccelerated="true"
                >
@@ -32,7 +32,7 @@
               android:launchMode="singleTask"
               android:process=":python"
               android:screenOrientation="landscape"
-              android:windowSoftInputMode="stateAlwaysHidden"
+              android:windowSoftInputMode="adjustResize"
             >
 
       

@@ -92,13 +92,13 @@
   <exec executable="python" failonerror="true">
      <arg line="shorten_filenames.py" />
   </exec>
-  <!-- build the zip file of the ka-lite codebase -->
+  <!-- build the zip file of the ka-lite codebase 
   <zip destfile="ka-lite-android/ka-lite.zip"
-       basedir="ka-lite" />
+       basedir="ka-lite" /> elielielieli-->
 </target>
 
 <target name="build" description="build KA Lite application">
-  <property name="app-name" value="KA Lite test" />
+  <property name="app-name" value="Connect.Teaching" />
 
   <!-- apk version = KA Lite version number -->
   <exec dir="ka-lite/kalite" executable="python" outputproperty="app-version">
