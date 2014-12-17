@@ -4,3 +4,6 @@
 [submodule "pybuilder-hack"]
 	path = pybuilder-hack
 	url = https://github.com/aronasorman/pybuilder-hack.git
+[submodule "python-for-android"]
+	path = python-for-android
+	url = https://github.com/fle-internal/python-for-android
