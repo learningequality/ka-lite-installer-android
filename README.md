@@ -36,6 +36,7 @@ You also want to ensure you have ia32-libs installed. If you are running Ubuntu 
 Build
 -----
 To build the apk, first setup the environment with the following command:
+
 	export ANDROIDAPI=<Android API version(default is 14)> 
 	export ANDROIDNDKVER=<Android NDK version> 
 	export ANDROIDSDK=<Path to the Android SDK> 
