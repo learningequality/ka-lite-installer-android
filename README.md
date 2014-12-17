@@ -2,6 +2,8 @@ KA Lite Wrapper for Android
 ===============
 
 Android port of KA Lite (an offline version of Khan Academy), encapsulating the Django project.
+please run $ git clone —recursive https://github.com/learningequality/ka-lite-installer-android.git
+to clone the submodule inside this repo
 
 Version info
 ------------
@@ -33,17 +35,15 @@ You also want to ensure you have ia32-libs installed. If you are running Ubuntu 
 
 Build
 -----
-To build the apk, run the _ant_ with the folowing properties:
+To build the apk, first setup the environment with the following command:
+export ANDROIDAPI=<Android API version(default is 14)>
+export ANDROIDNDKVER=<Android NDK version>
+export ANDROIDSDK=<Path to the Android SDK>
+export ANDROIDNDK=<Path to the Android NDK(default is r8c)>
 
-* android-sdk - Path to the Android SDK (will ask if not set)
-* android-ndk - Path to the Android NDK (will ask if not set)
-* android-api - Android API version (default is 14)
-* android-ndkver - Android NDK version (default is r8c)
+Navigate to the ka-lite-installer-android folder, then run the build-script(this is a SHELL script file) file from that folder
 
-Command could look like this:
-
-    ant -Dandroid-sdk=/path/to/android/sdk -Dandroid-ndk=/path/to/android/ndk -Dandroid-api=14 -Dandroid-ndkver=r8c
-
+After the build process finished, you should be able to find the APK inside the python-for-android/dist/default/bin folder.
 
 Debug
 -----
