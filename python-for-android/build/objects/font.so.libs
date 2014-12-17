@@ -1,1 +1,0 @@
--lm -L/Users/Eli/Desktop/kaliteandroid78/python-for-android/build/libs -L/Users/Eli/Desktop/kaliteandroid78/python-for-android/src/obj/local/armeabi/ -lm -lz -L/Users/Eli/Desktop/kaliteandroid78/python-for-android/build/python-install/lib -lsdl -lm -lsdl_ttf -lpython2.7

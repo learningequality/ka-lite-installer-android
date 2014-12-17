@@ -1,2 +1,0 @@
-include *COPYING
-recursive-include jnius *.pyx *.pxi
