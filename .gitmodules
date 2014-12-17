@@ -1,3 +1,6 @@
 [submodule "ka-lite"]
 	path = ka-lite
 	url = https://github.com/learningequality/ka-lite.git
+[submodule "pybuilder-hack"]
+	path = pybuilder-hack
+	url = https://github.com/aronasorman/pybuilder-hack.git
