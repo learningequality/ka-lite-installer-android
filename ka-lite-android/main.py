@@ -21,7 +21,6 @@ import webbrowser
 from kivy.core.window import Window
 from kivy.base import EventLoop 
 
-#webview stuff
 from kivy.uix.widget import Widget
 from kivy.clock import Clock  
 from jnius import autoclass, cast
@@ -36,7 +35,7 @@ Window = autoclass('android.view.Window')
 WebViewClient = autoclass('android.webkit.WebViewClient')                                       
 android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
 System = autoclass('java.lang.System')
-JavaHandler = autoclass('org.eli.JavaHandler')
+JavaHandler = autoclass('org.kalite_javahandle.JavaHandler')
 
 class JavaHandle(Widget): 
     def  __init__(self, **kwargs):
@@ -70,8 +69,6 @@ class JavaHandle(Widget):
     def reload_first_page(self):
         self.java_handle.reloadFirstPage()
 
-#webview stuff
-
 class PythonSharedPreferenceChangeListener(PythonJavaClass):
     __javainterfaces__ = ['android/content/SharedPreferences$OnSharedPreferenceChangeListener']
 
@@ -84,11 +81,8 @@ class PythonSharedPreferenceChangeListener(PythonJavaClass):
         if sharedPref.getInt("live", 1) == 0:
             try:
                 from android import AndroidService
-                JavaHandler.displayInLogCat("cdcdcd share1")
                 AndroidService().stop()
-                JavaHandler.displayInLogCat("cdcdcd share2")
                 time.sleep(0.3)
-                JavaHandler.displayInLogCat("cdcdcd share3")
                 JavaHandler.killApp()
             except IOError:
                 print "cannot stop AndroidService normally"
@@ -156,7 +150,6 @@ class ServerThread(threading.Thread, Server):
 
     def extract_kalite(self):
         '''KA Lite code is in the ZIP archive on the first run, extract it'''
-
         os.chdir(self.project_dir)
         if os.path.exists('ka-lite.zip'):
             if JavaHandler.unzipKaLite():
@@ -241,27 +234,6 @@ class ServerThread(threading.Thread, Server):
         return 'user "{0}" with password "{1}"'.format(username,
                                                        password)
 
-    # def create_superuser(self):
-    #     from django.contrib.auth.models import User
-    #     if User.objects.filter(is_superuser=True).exists():
-    #         return 'user exists'
-
-    #     username = 'yoda'
-    #     email = 'yoda@example.com'
-    #     password = 'yoda'
-
-    #     self.execute_manager(self.settings, [
-    #             'manage.py', 'setup',
-    #             '--noinput',
-    #             '--user', username,
-    #             '--password', password,
-    #             '--email', email])
-    #    # user = User.objects.get(username__exact=username)
-    #   #  user.set_password(password)
-    #   #  user.save()
-    #     return 'user "{0}" with password "{1}"'.format(username,
-    #                                                    password)
-
     def check_server(self):
         return 'server is running' if self.server_is_running else (
             'server is stopped')
@@ -331,14 +303,6 @@ class KALiteApp(App):
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
-        #check mySettings file
-        # settings_path = self.user_data_dir
-        # try:
-        #     my_setting_file = open(settings_path+'/mySettings.txt', 'r')
-        #     if my_setting_file.read() == "allset":
-        #         self.key_generated = True
-        # except IOError:
-        #     print "file has not been created yet"
         if self.pref.getInt("setup", 0) == 1:
             self.key_generated = True
 
@@ -346,7 +310,6 @@ class KALiteApp(App):
         self.kalite = ServerThread(self, self.my_webview)
         self.kalite.start()
         self.prepare_server()
-        #self.kalite.start()
 
     def hook_keyboard(self, window, key, *largs):
         if key == 27:  # BACK
@@ -361,18 +324,6 @@ class KALiteApp(App):
     def on_pause(self):
         return True
 
-        # if self.kalite.server_is_running:
-        #     #self.kalite.schedule('stop_server', 'Stop server')
-        #     try:
-        #         from android import AndroidService
-        #         AndroidService().stop()
-        #     except IOError:
-        #         print "cannot stop AndroidService normally"
-        # if self.kalite.is_alive():
-        #     self.kalite.schedule('stop_thread')
-        #     self.kalite.join()
-       # return True
-
     @clock_callback
     def report_activity(self, activity, message):
         assert activity in ('start', 'result')
@@ -386,10 +337,6 @@ class KALiteApp(App):
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
-            # if hasattr(self, 'activity_label'):
-            #     self.main_ui.remove_messages(self.activity_label)
-
-            # self.activity_label.text = self.activity_label.text + message
 
             self.progress_tracking += 7.5
             self.main_ui.start_progress_bar(self.progress_tracking)
@@ -405,14 +352,12 @@ class KALiteApp(App):
                 self.main_ui.remove_loading_gif()
 
             if self.progress_tracking >= 97 and message == 'Loading finished':
-                JavaHandler.displayInLogCat("rerere finished")
                 self.server_state = False
                 self.my_webview.run_webview()
                 self.main_ui.remove_loading_gif()
 
             if self.server_state and message == 'OK' and self.progress_tracking >= 97:
                 self.server_state = False
-                #self.start_webview_button()
                 self.my_webview.run_webview()
                 self.main_ui.remove_loading_gif()
 
@@ -424,17 +369,13 @@ class KALiteApp(App):
 
         if not self.key_generated:
             self.main_ui.disable_reload_bnt()
-            # self.schedule('schedule_load_content', 'Loading the content')
             self.schedule('generate_keys', 'Generating keys')
 
         self.schedule('setup_environment', 'Setting up environment')
         self.schedule('import_django', 'Trying to import Django')
         if not self.key_generated:
-            # self.main_ui.disable_reload_bnt()
-            # self.schedule('generate_keys', 'Generating keys')
             self.schedule('create_superuser', 'Creating admin user')
             self.schedule('schedule_load_content', 'Loading the content')
-            # self.schedule('setup_environment', 'Setting up environment')
      
             self.editor = self.pref.edit()
             self.editor.putInt("setup", 1)
@@ -445,7 +386,6 @@ class KALiteApp(App):
         self.schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
-        #self.thread_num = self.main_ui.get_thread_num()
         description = "Run server. To see the KA Lite site, " + (
             "open  http://{}:{} in browser").format(self.server_host,
                                                     self.server_port, threadnum)
