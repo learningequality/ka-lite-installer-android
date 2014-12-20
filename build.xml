@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project name="KA Lite Android builder" default="main" basedir=".">
 
-<target name="main" depends="android-vars, python-for-android, kalite-javahandle-copyover, AndroidManifest-tmpl-copyover, PythonActivity-copyover, distribute,
+<target name="main" depends="android-vars, python-for-android, kalite-javahandle-copyover, AndroidManifest-tmpl-copyover, PythonActivity-copyover, kivy-icon-copyover, kivy-presplash-copyover, launcher-icon-copyover, icon-copyover, presplash-copyover, distribute,
                              ka-lite, build">
 
 </target>
@@ -58,7 +58,32 @@
 <target name="AndroidManifest-tmpl-copyover"
         description="replace the AndroidManifest.tmpl.xml">
   <delete file="python-for-android/src/templates/AndroidManifest.tmpl.xml" />
-  <copy file="copy-over/AndroidManifest.tmpl.xml" todir="python-for-android/src/templates" />
+  <copy file="copy-over/templates/AndroidManifest.tmpl.xml" todir="python-for-android/src/templates" />
+</target>
+<target name="kivy-icon-copyover"
+        description="replace the kivy-icon.png">
+  <delete file="python-for-android/src/templates/kivy-icon.png" />
+  <copy file="copy-over/templates/kivy-icon.png" todir="python-for-android/src/kivy-icon.png" />
+</target>
+<target name="kivy-presplash-copyover"
+        description="replace the kivy-presplash.jpg">
+  <delete file="python-for-android/src/templates/kivy-presplash.jpg" />
+  <copy file="copy-over/templates/kivy-presplash.jpg" todir="python-for-android/src/templates" />
+</target>
+<target name="launcher-icon-copyover"
+        description="replace the launcher-icon.png">
+  <delete file="python-for-android/src/templates/launcher-icon.png" />
+  <copy file="copy-over/templates/launcher-icon.png" todir="python-for-android/src/templates" />
+</target>
+<target name="icon-copyover"
+        description="replace the icon.png">
+  <delete file="python-for-android/src/res/drawable/icon.png" />
+  <copy file="copy-over/drawable/icon.png" todir="python-for-android/src/res/drawable" />
+</target>
+<target name="presplash-copyover"
+        description="replace the presplash.jpg">
+  <delete file="python-for-android/src/res/drawable/presplash.jpg" />
+  <copy file="copy-over/drawable/presplash.jpg" todir="python-for-android/src/res/drawable" />
 </target>
 
 <target name="PythonActivity-copyover"
