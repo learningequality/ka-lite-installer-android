@@ -36,6 +36,7 @@ WebViewClient = autoclass('android.webkit.WebViewClient')
 android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
 System = autoclass('java.lang.System')
 JavaHandler = autoclass('org.kalite_javahandle.JavaHandler')
+VersionCode = autoclass('org.kalite_javahandle.VersionCode')
 
 class JavaHandle(Widget): 
     def  __init__(self, **kwargs):
@@ -56,6 +57,10 @@ class JavaHandle(Widget):
             self.java_handle.goBack()
         else:
             self.java_handle.quitDialog()
+
+    @run_on_ui_thread
+    def save_version_code(self):
+        self.java_handle.save_version_code()
 
     @run_on_ui_thread
     def quit_dialog(self):
@@ -187,6 +192,7 @@ class ServerThread(threading.Thread, Server):
 
     #cannot run on ui thread, otherwise it will not show on the schedule page.
     def schedule_load_content(self):
+        self.web_view.save_version_code()
         if JavaHandler.movingFile():
             return 'Loading finished'
         else:
@@ -303,8 +309,12 @@ class KALiteApp(App):
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
+        version_code = VersionCode()
+        if self.pref.getInt("setup", 0) == 1 and version_code.matched_version():
         if self.pref.getInt("setup", 0) == 1:
             self.key_generated = True
+        else:
+            self.key_generated = False
 
         self.main_ui.add_loading_gif()
         self.kalite = ServerThread(self, self.my_webview)
