@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="{{args.package}}"
-          android:versionCode="{{1210}}"
+          android:versionCode="{{1206}}"
           android:versionName="{{args.version}}"
           android:installLocation="{{ args.install_location }}"
           >
