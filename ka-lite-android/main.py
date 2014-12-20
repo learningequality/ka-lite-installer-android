@@ -21,6 +21,7 @@ import webbrowser
 from kivy.core.window import Window
 from kivy.base import EventLoop 
 
+#webview stuff
 from kivy.uix.widget import Widget
 from kivy.clock import Clock  
 from jnius import autoclass, cast
@@ -74,6 +75,12 @@ class JavaHandle(Widget):
     def reload_first_page(self):
         self.java_handle.reloadFirstPage()
 
+    @run_on_ui_thread
+    def content_not_found_dialog(self):
+        self.java_handle.contentNotFoundDialog()
+
+#webview stuff
+
 class PythonSharedPreferenceChangeListener(PythonJavaClass):
     __javainterfaces__ = ['android/content/SharedPreferences$OnSharedPreferenceChangeListener']
 
@@ -82,7 +89,6 @@ class PythonSharedPreferenceChangeListener(PythonJavaClass):
 
     @java_method('(Landroid/content/SharedPreferences;Ljava/lang/String;)V')
     def onSharedPreferenceChanged(self, sharedPref, key):
-        System.out.println("shshsh callback");
         if sharedPref.getInt("live", 1) == 0:
             try:
                 from android import AndroidService
@@ -196,12 +202,11 @@ class ServerThread(threading.Thread, Server):
         if JavaHandler.movingFile():
             return 'Loading finished'
         else:
-            self.web_view.show_toast('Content  folder  not  found!  Exiting...')
             if self.server_is_running:
                 from android import AndroidService
                 AndroidService().stop()
-            time.sleep(4)
-            JavaHandler.killApp()
+            time.sleep(0.5)
+            self.web_view.content_not_found_dialog()
 
     def schedule_reload_content(self):
         if self.server_is_running:
@@ -212,9 +217,11 @@ class ServerThread(threading.Thread, Server):
             self.start_server('threads=18')
             return 'Loading finished'
         else:
-            self.web_view.show_toast('Content  folder  not  found!  Exiting...')
-            time.sleep(4)
-            JavaHandler.killApp()
+            if self.server_is_running:
+                from android import AndroidService
+                AndroidService().stop()
+            time.sleep(0.5)
+            self.web_view.content_not_found_dialog()
 
 
     def generate_keys(self):
@@ -311,7 +318,6 @@ class KALiteApp(App):
     def on_start(self):
         version_code = VersionCode()
         if self.pref.getInt("setup", 0) == 1 and version_code.matched_version():
-        if self.pref.getInt("setup", 0) == 1:
             self.key_generated = True
         else:
             self.key_generated = False
@@ -322,7 +328,7 @@ class KALiteApp(App):
         self.prepare_server()
 
     def hook_keyboard(self, window, key, *largs):
-        if key == 27:  # BACK
+        if key == 27:  # BACK button
             # if self.back_pressed + 500 > System.currentTimeMillis():
             #     self.my_webview.quit_dialog()
             # else:
@@ -347,7 +353,6 @@ class KALiteApp(App):
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
-
             self.progress_tracking += 7.5
             self.main_ui.start_progress_bar(self.progress_tracking)
 
@@ -385,11 +390,12 @@ class KALiteApp(App):
         self.schedule('import_django', 'Trying to import Django')
         if not self.key_generated:
             self.schedule('create_superuser', 'Creating admin user')
-            self.schedule('schedule_load_content', 'Loading the content')
-     
+
             self.editor = self.pref.edit()
             self.editor.putInt("setup", 1)
             self.editor.apply()
+
+            self.schedule('schedule_load_content', 'Loading the content')
         else:
             self.progress_tracking += 45
 
