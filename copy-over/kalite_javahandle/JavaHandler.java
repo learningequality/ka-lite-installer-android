@@ -19,7 +19,6 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.FrameLayout;
 
 //for unzipping
-//import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -47,7 +46,6 @@ import java.io.OutputStreamWriter;
 
 import android.widget.Toast;
 import java.lang.Thread;
-//import org.jshybugger.DebugServiceClient;
 
 //webview
 import android.widget.FrameLayout;
@@ -80,14 +78,21 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager;
 
+import android.graphics.Bitmap;
+import android.os.Message;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
 public class JavaHandler {
 	static Activity myActivity = (Activity)PythonActivity.mActivity;
 	ProgressBar progressBar;
 	WebView wv;
-	static boolean asus_switch = false;   //for faster development, skip moving file.
 	static String content_data_path;
 	SharedPreferences sharedpreferences;
 	Editor editor;
+	String previousUrl;
+	Timer timer;
 
 	public static boolean unzipKaLite(){
 		String _fileLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite.zip";
@@ -405,20 +410,18 @@ public class JavaHandler {
 		decorView.addView(progressBar);
 
 		wv = new MyWebView(myActivity);
-
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
 
 
 		wv.setWebChromeClient(new MyWebChromeClient());
 		wv.setWebViewClient(new MyWebViewClient());
-		wv.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
 
 		ws.setPluginState(WebSettings.PluginState.ON);
 
-		wv.loadUrl("http://0.0.0.0:8008/");
 		ws.setRenderPriority(WebSettings.RenderPriority.HIGH);
 		ws.setCacheMode(WebSettings.LOAD_NO_CACHE); //enable cache will cause problem for kalite
+		wv.loadUrl("http://0.0.0.0:8008/");
 		
         myActivity.setContentView(wv);
 	}
@@ -428,7 +431,6 @@ public class JavaHandler {
         builder.setMessage("Do you want to exit this app ?")
               	.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
                    	public void onClick(DialogInterface dialog, int id) {
-                   		// System.exit(0);
                    		editor.putInt("live", 0);
 						editor.commit(); 
                    	}
@@ -503,11 +505,33 @@ public class JavaHandler {
 		}
 	}
 
+	class RemindTask extends TimerTask {
+	    public void run() {
+			if(previousUrl.equals("http://0.0.0.0:8008/")){
+				wv.loadUrl("http://0.0.0.0:8008/");
+			}
+			else{
+				editor.putInt("first_time_bootup", 1);
+	            editor.commit();
+	            timer.cancel(); 
+			}
+	    }
+	}
+
 	private class MyWebViewClient extends WebViewClient {
+		@Override
+		public void onPageStarted (WebView webView, String url, Bitmap favicon){
+			super.onPageStarted (webView, url, favicon);
+			previousUrl = url;
+			if(sharedpreferences.getInt("first_time_bootup", 0) == 0 ){
+				timer = new Timer();
+				timer.schedule(new RemindTask(), 15 * 1000);
+			}
+		}
+
 		@Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             super.onReceivedSslError(view, handler, error);
-           //Error happens here and returns an empty page.
             handler.proceed();
         }
 
@@ -518,7 +542,7 @@ public class JavaHandler {
             	String[] parts = url.split("/");
             	String pdf_path = content_path + parts[parts.length - 1];
             	File pdf_file = new File(pdf_path);
-            	Uri pdf_uri = Uri.fromFile(pdf_file);
+            	Uri pdf_uri = Uri.fromFile(pdf_file);   
             	Intent intent = new Intent(Intent.ACTION_VIEW);
             	intent.setDataAndType(pdf_uri, "application/pdf");
            // 	intent.setPackage("com.adobe.reader");
