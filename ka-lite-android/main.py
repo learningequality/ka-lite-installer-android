@@ -79,6 +79,8 @@ class JavaHandle(Widget):
     def content_not_found_dialog(self):
         self.java_handle.contentNotFoundDialog()
 
+    def upzip_and_relocate(self):
+        self.java_handle.upzip_and_relocate()
 #webview stuff
 
 class PythonSharedPreferenceChangeListener(PythonJavaClass):
@@ -163,8 +165,7 @@ class ServerThread(threading.Thread, Server):
         '''KA Lite code is in the ZIP archive on the first run, extract it'''
         os.chdir(self.project_dir)
         if os.path.exists('ka-lite.zip'):
-            if JavaHandler.unzipKaLite():
-                JavaHandler.movingDataSqlite()
+            self.web_view.upzip_and_relocate()
 
         if not os.path.exists('ka-lite'):
             return 'fail'
@@ -222,10 +223,6 @@ class ServerThread(threading.Thread, Server):
                 AndroidService().stop()
             time.sleep(0.5)
             self.web_view.content_not_found_dialog()
-
-
-    def generate_keys(self):
-        JavaHandler.generateRSA()
 
     def create_superuser(self):
         from django.contrib.auth.models import User
@@ -312,14 +309,17 @@ class KALiteApp(App):
         self.pref = android_activity.getSharedPreferences("MyPref", android_activity.MODE_MULTI_PROCESS)
         self.sharedpref_listener = PythonSharedPreferenceChangeListener()
         self.pref.registerOnSharedPreferenceChangeListener(self.sharedpref_listener)
+        self.editor = self.pref.edit()
 
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
         version_code = VersionCode()
-        if self.pref.getInt("setup", 0) == 1 and version_code.matched_version():
+        if self.pref.getInt("first_time_bootup", 0) == 1 and version_code.matched_version():
             self.key_generated = True
         else:
+            self.editor.putInt("first_time_bootup", 0)
+            self.editor.apply()
             self.key_generated = False
 
         self.main_ui.add_loading_gif()
@@ -328,7 +328,7 @@ class KALiteApp(App):
         self.prepare_server()
 
     def hook_keyboard(self, window, key, *largs):
-        if key == 27:  # BACK button
+        if key == 27:  # BACK
             # if self.back_pressed + 500 > System.currentTimeMillis():
             #     self.my_webview.quit_dialog()
             # else:
@@ -349,11 +349,11 @@ class KALiteApp(App):
             self.activity_label = Label(text="{0} ... ".format(message), color=(0.14, 0.23, 0.25, 1))
             self.main_ui.add_messages(self.activity_label)
 
-            self.progress_tracking += 7.5
+            self.progress_tracking += 10
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
-            self.progress_tracking += 7.5
+            self.progress_tracking += 10
             self.main_ui.start_progress_bar(self.progress_tracking)
 
 
@@ -384,27 +384,19 @@ class KALiteApp(App):
 
         if not self.key_generated:
             self.main_ui.disable_reload_bnt()
-            self.schedule('generate_keys', 'Generating keys')
+            self.schedule('schedule_load_content', 'Loading the content')
 
         self.schedule('setup_environment', 'Setting up environment')
-        self.schedule('import_django', 'Trying to import Django')
         if not self.key_generated:
             self.schedule('create_superuser', 'Creating admin user')
 
-            self.editor = self.pref.edit()
-            self.editor.putInt("setup", 1)
-            self.editor.apply()
-
-            self.schedule('schedule_load_content', 'Loading the content')
         else:
-            self.progress_tracking += 45
+            self.progress_tracking += 40
 
         self.schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
-        description = "Run server. To see the KA Lite site, " + (
-            "open  http://{}:{} in browser").format(self.server_host,
-                                                    self.server_port, threadnum)
+        description = "Run server"
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description, threadnum)
 

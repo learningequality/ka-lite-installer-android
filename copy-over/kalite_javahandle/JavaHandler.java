@@ -94,7 +94,13 @@ public class JavaHandler {
 	String previousUrl;
 	Timer timer;
 
-	public static boolean unzipKaLite(){
+	public void upzip_and_relocate(){
+		if(unzipKaLite()){
+			movingDataSqlite();
+		}
+	}
+
+	public boolean unzipKaLite(){
 		String _fileLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite.zip";
 	    String _targetLocation = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/.";
 	    return unzipThreadUI(_fileLocation, _targetLocation);
@@ -145,7 +151,7 @@ public class JavaHandler {
 		}
 	}
 
-	public static void movingDataSqlite(){
+	public void movingDataSqlite(){
 		String data_sqlite_path = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite/kalite/database";
 		String data_sqlite_destination = Environment.getExternalStorageDirectory().getPath() + "/kalite_essential";
 
@@ -153,21 +159,30 @@ public class JavaHandler {
 		File data_sqlite_destination_folder = new File(data_sqlite_destination);
 		if(!data_sqlite_destination_folder.exists()){
 			//data_sqlite_destination_folder.mkdir();
+			System.out.println("datasqlite not exists");
 			fileMovingThreadUI file_mover_1 = new fileMovingThreadUI(data_sqlite_source, data_sqlite_destination_folder);
 			file_mover_1.start_moving();
 			file_mover_1 = null;
+
+			generate_local_settings();
+			copy_local_settings_over();
 		}else{
+			System.out.println("datasqlite exists");
 			SQLiteDatabase db = SQLiteDatabase.openDatabase(data_sqlite_destination+"/data.sqlite", null, 0);
-			String myQuery = "SELECT id FROM securesync_device WHERE id='49c04a1ff93b5de0b5f3d99340346210';";
+			String myQuery = "SELECT id FROM securesync_device WHERE id='49c04a1ff93b5de0b5f3d99340346210';";  //this is for fixing a mistake from an older APK
 			Cursor cursor = db.rawQuery(myQuery, null);
 			if(cursor.getCount() > 0){
+				System.out.println("found bad datasqlite");
 				File bad_datasqlite = new File(data_sqlite_destination+"/data.sqlite");
 				bad_datasqlite.delete();
 
 				fileMovingThreadUI file_mover_1 = new fileMovingThreadUI(data_sqlite_source, data_sqlite_destination_folder);
 				file_mover_1.start_moving();
 				file_mover_1 = null;
+
+				generate_local_settings();
 			}
+			copy_local_settings_over();
 		}
 	}
 
@@ -190,7 +205,6 @@ public class JavaHandler {
 			recursive_search(_root);
 			moving = content_data_path;  //content_data_path has been processed by recursive_search
 			if(content_data_path == null){
-
 				return false;
 			}
 		}
@@ -276,7 +290,7 @@ public class JavaHandler {
 		}
 	}
 
-	public static boolean unzipThreadUI(String _zipFile, String _targetLocation){
+	public boolean unzipThreadUI(String _zipFile, String _targetLocation){
 		//create target location folder if not exist
 		dirChecker(_targetLocation);
 		byte[] buffer = new byte[1024];
@@ -314,7 +328,7 @@ public class JavaHandler {
 		return false;
 	}
 
-	public static void generateRSA(){
+	public void generate_local_settings(){
 		try { 
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA"); 
             keyGen.initialize(2048); 
@@ -331,13 +345,8 @@ public class JavaHandler {
             String copied_content = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/copied_kalite_content";
             String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
 
-            if(!asus_switch){
-	            content_root = "\nCONTENT_ROOT = \"" + copied_content +"/content/\"";
-	            content_data = "\nCONTENT_DATA_PATH = \"" + copied_content +"/data/\"";
-	        }else{
-	            content_root = "\nCONTENT_ROOT = \""  +"/Removable/MicroSD/ka-lite/content/\"";
-	            content_data = "\nCONTENT_DATA_PATH = \"" +"/Removable/MicroSD/ka-lite/data/\"";
-	        }
+            content_root = "\nCONTENT_ROOT = \"" + copied_content +"/content/\"";
+            content_data = "\nCONTENT_DATA_PATH = \"" + copied_content +"/data/\"";
 
 
             String gut ="CHANNEL = \"connectteaching\"" +
@@ -348,43 +357,51 @@ public class JavaHandler {
             		database_path + 
             		content_root +
             		content_data +
+            		"\nDEBUG = True" +
             		"\nUSE_I18N = False" +
             		"\nUSE_L10N = False" +
-            		"\nEBUG = False" +
             		"\nOWN_DEVICE_PUBLIC_KEY=" + "\"" + Base64.encodeToString(publicKeyBytes, 24, publicKeyBytes.length-24, Base64.DEFAULT).replace("\n", "\\n") + "\""
             		+ "\nOWN_DEVICE_PRIVATE_KEY=" +  "\"" + "-----BEGIN RSA PRIVATE KEY-----" + "\\n" 
             		+ Base64.encodeToString(privateKeyBytes, 26, privateKeyBytes.length-26, Base64.DEFAULT).replace("\n", "\\n")
             		+ "-----END RSA PRIVATE KEY-----" + "\"";
             
-            String fileLocation2 = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite/kalite/";
+            String fileLocation2 = Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/";
             File myFile = new File(fileLocation2 , "local_settings.py");
-            if(myFile.exists())
+            if(!myFile.exists())
             {
-               try
-               {
+                myFile.createNewFile();
+                try
+               	{
                     FileOutputStream fOut = new FileOutputStream(myFile);
                     OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
                     myOutWriter.append(gut);
                     myOutWriter.close();
                     fOut.close();
-                } catch(Exception e)
-                {
-
-                }
+                } catch(Exception e){}
             }
-            else
-            {
-                myFile.createNewFile();
-            }
-            
         } catch(Exception e) { 
             System.out.println("RSA generating error"); 
         }
 	}
 
-	public void initWebView(){
+	public void copy_local_settings_over(){
+		String local_settings_path = Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/local_settings.py";
+		String local_settings_destination = Environment.getExternalStorageDirectory().getPath() + "/org.kalite.test/ka-lite/kalite";
 
+		File old_local_settings = new File(local_settings_destination+"/local_settings.py");
+		if(old_local_settings.exists()){
+			old_local_settings.delete();
+		}
+
+		File local_settings_source = new File(local_settings_path);
+		File local_settings_destination_file = new File(local_settings_destination+"/local_settings.py");
+
+
+		fileMovingThreadUI local_settings_mover = new fileMovingThreadUI(local_settings_source, local_settings_destination_file);
+		local_settings_mover.start_moving();
+		local_settings_mover = null;
 	}
+	
 
 	public void show_toast(String str){
 		Toast.makeText(myActivity, str, Toast.LENGTH_LONG).show();
@@ -392,11 +409,10 @@ public class JavaHandler {
 
 	int progressBar_height = 5;
 	public void showWebView(){ 
-		// sharedpreferences = myActivity.getSharedPreferences("MyPref", myActivity.MODE_MULTI_PROCESS);
-		// editor = sharedpreferences.edit();
-		// editor.putInt("live", 1);
-		// // editor.putInt("version_code", get_app_version());
-		// editor.commit(); 
+		sharedpreferences = myActivity.getSharedPreferences("MyPref", myActivity.MODE_MULTI_PROCESS);
+		editor = sharedpreferences.edit();
+		editor.putInt("live", 1);
+		editor.commit(); 
 
 		String model = Build.MODEL;
 		if(model.equals("ME172V")) {
