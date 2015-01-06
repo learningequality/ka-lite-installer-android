@@ -63,7 +63,7 @@
 <target name="kivy-icon-copyover"
         description="replace the kivy-icon.png">
   <delete file="python-for-android/src/templates/kivy-icon.png" />
-  <copy file="copy-over/templates/kivy-icon.png" todir="python-for-android/src/kivy-icon.png" />
+  <copy file="copy-over/templates/kivy-icon.png" todir="python-for-android/src/templates" />
 </target>
 <target name="kivy-presplash-copyover"
         description="replace the kivy-presplash.jpg">
