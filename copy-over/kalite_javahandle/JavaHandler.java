@@ -83,6 +83,7 @@ import android.os.Message;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Date;
 
 public class JavaHandler {
 	static Activity myActivity = (Activity)PythonActivity.mActivity;
@@ -159,30 +160,33 @@ public class JavaHandler {
 		File data_sqlite_destination_folder = new File(data_sqlite_destination);
 		if(!data_sqlite_destination_folder.exists()){
 			//data_sqlite_destination_folder.mkdir();
-			System.out.println("datasqlite not exists");
+			generate_local_settings();
+			copy_local_settings_over();
+
+			System.out.println("kalite_essential not exists");
 			fileMovingThreadUI file_mover_1 = new fileMovingThreadUI(data_sqlite_source, data_sqlite_destination_folder);
 			file_mover_1.start_moving();
 			file_mover_1 = null;
-
-			generate_local_settings();
-			copy_local_settings_over();
 		}else{
-			System.out.println("datasqlite exists");
-			SQLiteDatabase db = SQLiteDatabase.openDatabase(data_sqlite_destination+"/data.sqlite", null, 0);
-			String myQuery = "SELECT id FROM securesync_device WHERE id='49c04a1ff93b5de0b5f3d99340346210';";  //this is for fixing a mistake from an older APK
-			Cursor cursor = db.rawQuery(myQuery, null);
-			if(cursor.getCount() > 0){
-				System.out.println("found bad datasqlite");
-				File bad_datasqlite = new File(data_sqlite_destination+"/data.sqlite");
-				bad_datasqlite.delete();
+			System.out.println("kalite_essential exists");
+			String local_settings_path = Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/local_settings.py";
+			File local_settings_essential = new File(local_settings_path);
+			if(!local_settings_essential.exists()){
+				generate_local_settings();
+				copy_local_settings_over();
+
+				System.out.println("local_settings not exists");
+				Date date = new Date();
+				File old_datasqlite = new File(data_sqlite_destination+"/data.sqlite");
+				File rename_old_datasqlite = new File(data_sqlite_destination+"/"+date.getTime()+"old_data.sqlite");
+				old_datasqlite.renameTo(rename_old_datasqlite);
 
 				fileMovingThreadUI file_mover_1 = new fileMovingThreadUI(data_sqlite_source, data_sqlite_destination_folder);
 				file_mover_1.start_moving();
 				file_mover_1 = null;
-
-				generate_local_settings();
+			}else{
+				copy_local_settings_over();
 			}
-			copy_local_settings_over();
 		}
 	}
 
