@@ -159,7 +159,7 @@ public class JavaHandler {
 		File data_sqlite_source = new File(data_sqlite_path);
 		File data_sqlite_destination_folder = new File(data_sqlite_destination);
 		if(!data_sqlite_destination_folder.exists()){
-			//data_sqlite_destination_folder.mkdir();
+			data_sqlite_destination_folder.mkdir();
 			generate_local_settings();
 			copy_local_settings_over();
 
