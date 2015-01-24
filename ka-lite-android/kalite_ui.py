@@ -6,8 +6,10 @@ from kivy.uix.image import Image
 from kivy.graphics import Color, Rectangle
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.core.window import Window
+from kivy.uix.dropdown import DropDown
 Window.clearcolor = (1, 1, 1, 1)
 
 class _BoxLayout(BoxLayout):
@@ -24,78 +26,46 @@ class _BoxLayout(BoxLayout):
 
 class KaliteUI(object):
 	def __init__(self, kaliteApp):
+		dropdown = DropDown()
+		dropdown_btn = Button(text='menu', size_hint_x=None, size_hint_y=None, size=(150, 40), font_size=18
+		    , color=(.06, .6, .2, 1), bold=True, background_color=(1, 1, 1, 0.2))
+		dropdown_btn.bind(on_release=dropdown.open)
+
 		self.root_layout = GridLayout(cols=1)
-		logo_houlder = _BoxLayout(orientation='horizontal')
-		log_img = Image(source='horizontal-logo.png')
-		#log_img.pos_hint={'center_x': 0.1, 'center_y': .5}
-		logo_houlder.padding = [20,10,Window.width-250,0]
-		logo_houlder.add_widget(log_img)
+		logo_holder = _BoxLayout(orientation='horizontal')
+		logo_img = Image(source='horizontal-logo.png', size_hint_x=None, width=360)
 
-		self.root_layout.add_widget(logo_houlder)
+		logo_holder.padding = [10,10,10,10]
+		logo_holder.add_widget(logo_img)
 
-		#create BubbleButtons
-		btn1= Button(text='OpenBrowser', font_size=30
-		    , color=(0.14, 0.23, 0.25, 1), bold=True)
-		btn1.background_normal='green_button_up.png'
-		#btn1.background_down='button_down.png'
-		btn1.bind(on_press=kaliteApp.start_webview_bubblebutton)
+		self.content_reload_btn= Button(text='Reload Content', size_hint_x=None, size_hint_y=None, size=(150, 40), font_size=18
+		    , color=(1, 1, 1, 1), bold=True)
 
-		btn2= Button(text='Exit', font_size=30
-		    , color=(0.14, 0.23, 0.25, 1), bold=True)
-		btn2.background_normal='green_button_up.png'
-		#btn2.background_down='button_down.png'
-		btn2.bind(on_press=kaliteApp.quit_app)
+		self.content_reload_btn.bind(on_press=kaliteApp.reload_content)
+		space_holder = _BoxLayout(orientation='horizontal', pos_hint={'x': .8})
+		logo_holder.add_widget(space_holder)
 
-		btn3= Button(text='thread', font_size=30
-		    , color=(0.14, 0.23, 0.25, 1), bold=True)
-		btn3.background_normal='green_button_up.png'
-		#btn3.background_down='button_down.png'
-		btn3.bind(on_press=kaliteApp.set_thread_num)
+		buttons_holder = AnchorLayout(anchor_x='center', anchor_y='center')
 
-		btn4= Button(text='StopServer', font_size=30
-		    , color=(0.14, 0.23, 0.25, 1), bold=True)
-		btn4.background_normal='green_button_up.png'
-		btn4.bind(on_press=kaliteApp.stop_server)
+		dropdown.add_widget(self.content_reload_btn)
+		logo_holder.add_widget(dropdown_btn)
+		logo_holder.spacing = [300, 0]
+		self.root_layout.add_widget(logo_holder)
 
-		btn5= Button(text='StartServer', font_size=30
-		    , color=(0.14, 0.23, 0.25, 1), bold=True)
-		btn5.background_normal='green_button_up.png'
-		btn5.bind(on_press=kaliteApp.start_server)
-
-		#Add items to bubble
-		buttons_holder = _BoxLayout(orientation='horizontal')
-		buttons_holder.padding = [10,0,10,0]
-		buttons_holder.add_widget(btn1)
-		buttons_holder.add_widget(btn2)
-		buttons_holder.add_widget(btn3)
-		buttons_holder.add_widget(btn4)
-		buttons_holder.add_widget(btn5)
-
-		self.root_layout.add_widget(buttons_holder)
-
-		#image stuff
 		self.img_holder = BoxLayout(orientation='vertical', size=(200,200), size_hint=(1, None))
 		self.img_holder.padding = [0,80,0,10]
 		self.root_layout.add_widget(self.img_holder)
 
-		#thread input box
-		text_input_holder = BoxLayout(orientation='horizontal')
-		text_input_holder.padding = [200,10,200,10]
-
-		self.text_input = TextInput(multiline=False, 
-		    hint_text="Enter number of threads here:")
-		self.text_input.padding = [10,10,10,10]
-		text_input_holder.add_widget(self.text_input)
-
 		self.progress_bar = ProgressBar()
 
-		self.server_box = BoxLayout(orientation='horizontal')
 		self.messages = BoxLayout(orientation='vertical')
 
 		self.root_layout.add_widget(self.messages)
-		self.root_layout.add_widget(self.server_box)
-		self.root_layout.add_widget(text_input_holder)
+		self.root_layout.add_widget(buttons_holder)
 		self.root_layout.add_widget(self.progress_bar)
+
+	def disable_reload_bnt(self):
+		self.content_reload_btn.disabled = True
 
 	def get_root_Layout(self):
 		return self.root_layout
@@ -108,17 +78,13 @@ class KaliteUI(object):
 
 	def add_loading_gif(self):
 		self.gif_img = Image(source='loading.zip',  anim_delay = 0.15)
-		#self.gif_img = Image(source='horizontal-logo.png')
 		self.img_holder.add_widget(self.gif_img)
 
 	def remove_loading_gif(self):
 		self.img_holder.remove_widget(self.gif_img)
 
-	def get_thread_num(self):
-		return 'threads=' + self.text_input.text
-
 	def start_progress_bar(self, anim_value):
-		self.anim = Animation(value = anim_value, duration = 1)
+		self.anim = Animation(value = anim_value, duration = 3)
 		self.anim.start(self.progress_bar)
 
 	def animation_bind(self, bindFunction):

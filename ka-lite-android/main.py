@@ -13,20 +13,98 @@ from kivy.clock import Clock
 from kivy.logger import Logger
 
 from kalite_ui import KaliteUI
-
 import logging
 logging.root = Logger
-
 from service.main import Server
 
 import webbrowser
+from kivy.core.window import Window
+from kivy.base import EventLoop 
 
-# import pdb
-# pdb.set_trace()
+#webview stuff
+from kivy.uix.widget import Widget
+from kivy.clock import Clock  
+from jnius import autoclass, cast
+from jnius import PythonJavaClass, java_method
+from android.runnable import run_on_ui_thread
+
+from kivy.uix.button import Button
+from kivy.uix.popup import Popup
+
+WebView = autoclass('android.webkit.WebView')
+Window = autoclass('android.view.Window')
+WebViewClient = autoclass('android.webkit.WebViewClient')                                       
+android_activity = autoclass('org.renpy.android.PythonActivity').mActivity
+System = autoclass('java.lang.System')
+JavaHandler = autoclass('org.kalite_javahandle.JavaHandler')
+VersionCode = autoclass('org.kalite_javahandle.VersionCode')
+
+class JavaHandle(Widget): 
+    def  __init__(self, **kwargs):
+        super(JavaHandle, self).__init__(**kwargs)
+        self.create_webview(**kwargs)
+
+    @run_on_ui_thread   
+    def create_webview(self, *args):    
+        self.java_handle = JavaHandler()
+
+    @run_on_ui_thread 
+    def run_webview(self):
+        self.java_handle.showWebView()
+
+    @run_on_ui_thread
+    def go_to_previous(self, app, server_is_running):
+        if self.java_handle.backPressed():
+            self.java_handle.goBack()
+        else:
+            self.java_handle.quitDialog()
+
+    @run_on_ui_thread
+    def save_version_code(self):
+        self.java_handle.save_version_code()
+
+    @run_on_ui_thread
+    def quit_dialog(self):
+        self.java_handle.quitDialog()
+
+    @run_on_ui_thread 
+    def show_toast(self, string):
+        self.java_handle.show_toast(string)
+
+    @run_on_ui_thread
+    def reload_first_page(self):
+        self.java_handle.reloadFirstPage()
+
+    @run_on_ui_thread
+    def content_not_found_dialog(self):
+        self.java_handle.contentNotFoundDialog()
+
+    def upzip_and_relocate(self):
+        self.java_handle.upzip_and_relocate()
+#webview stuff
+
+class PythonSharedPreferenceChangeListener(PythonJavaClass):
+    __javainterfaces__ = ['android/content/SharedPreferences$OnSharedPreferenceChangeListener']
+
+    def __init__(self):
+        super(PythonSharedPreferenceChangeListener, self).__init__()
+
+    @java_method('(Landroid/content/SharedPreferences;Ljava/lang/String;)V')
+    def onSharedPreferenceChanged(self, sharedPref, key):
+        if sharedPref.getInt("live", 1) == 0:
+            try:
+                from android import AndroidService
+                AndroidService().stop()
+                time.sleep(0.3)
+                JavaHandler.killApp()
+            except IOError:
+                print "cannot stop AndroidService normally"
+
 
 class ServerThread(threading.Thread, Server):
-    def __init__(self, app):
+    def __init__(self, app, mwebview):
         super(ServerThread, self).__init__()
+        self.web_view = mwebview
 
         class AppCaller(object):
             '''Execute App method in the main thread'''
@@ -85,12 +163,10 @@ class ServerThread(threading.Thread, Server):
 
     def extract_kalite(self):
         '''KA Lite code is in the ZIP archive on the first run, extract it'''
-
         os.chdir(self.project_dir)
         if os.path.exists('ka-lite.zip'):
-            with ZipFile('ka-lite.zip', mode="r") as z:
-                z.extractall('ka-lite')
-            os.remove('ka-lite.zip')
+            self.web_view.upzip_and_relocate()
+
         if not os.path.exists('ka-lite'):
             return 'fail'
 
@@ -121,11 +197,32 @@ class ServerThread(threading.Thread, Server):
         self.execute_manager(self.settings, ['manage.py', 'syncdb', '--noinput'])
         self.execute_manager(self.settings, ['manage.py', 'migrate', '--merge'])
 
-    def generate_keys(self):
-        #from config.models import Settings
-        #if Settings.get('private_key'):
-        #    return 'key exists'
-        self.execute_manager(self.settings, ['manage.py', 'generatekeys'])
+    #cannot run on ui thread, otherwise it will not show on the schedule page.
+    def schedule_load_content(self):
+        self.web_view.save_version_code()
+        if JavaHandler.movingFile():
+            return 'Loading finished'
+        else:
+            if self.server_is_running:
+                from android import AndroidService
+                AndroidService().stop()
+            time.sleep(0.5)
+            self.web_view.content_not_found_dialog()
+
+    def schedule_reload_content(self):
+        if self.server_is_running:
+            time.sleep(2)            
+            self.stop_server()
+        if JavaHandler.movingFile():
+            self.setup_environment()
+            self.start_server('threads=18')
+            return 'Loading finished'
+        else:
+            if self.server_is_running:
+                from android import AndroidService
+                AndroidService().stop()
+            time.sleep(0.5)
+            self.web_view.content_not_found_dialog()
 
     def create_superuser(self):
         from django.contrib.auth.models import User
@@ -198,34 +295,50 @@ class KALiteApp(App):
     # to avoid messing with other KA Lite installations
     server_port = '8008'
 
-    progress_tracking = 0
     server_state = False
-    thread_num = None
+    thread_num = 'threads=18'
+    key_generated = False
 
     def build(self):
+        self.progress_tracking = 0
         self.main_ui = KaliteUI(self)
+        EventLoop.window.bind(on_keyboard=self.hook_keyboard)
+        self.my_webview = JavaHandle()
+        self.back_pressed = System.currentTimeMillis()
+
+        self.pref = android_activity.getSharedPreferences("MyPref", android_activity.MODE_MULTI_PROCESS)
+        self.sharedpref_listener = PythonSharedPreferenceChangeListener()
+        self.pref.registerOnSharedPreferenceChangeListener(self.sharedpref_listener)
+        self.editor = self.pref.edit()
 
         return self.main_ui.get_root_Layout()
 
     def on_start(self):
-        self.kalite = ServerThread(self)
-        # self.prepare_server()
-        # self.kalite.start()
+        version_code = VersionCode()
+        if self.pref.getInt("first_time_bootup", 0) == 1 and version_code.matched_version():
+            self.key_generated = True
+        else:
+            self.editor.putInt("first_time_bootup", 0)
+            self.editor.apply()
+            self.key_generated = False
+
+        self.main_ui.add_loading_gif()
+        self.kalite = ServerThread(self, self.my_webview)
+        self.kalite.start()
+        self.prepare_server()
+
+    def hook_keyboard(self, window, key, *largs):
+        if key == 27:  # BACK
+            # if self.back_pressed + 500 > System.currentTimeMillis():
+            #     self.my_webview.quit_dialog()
+            # else:
+            #     self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+            # self.back_pressed = System.currentTimeMillis()
+            self.my_webview.go_to_previous(App, self.kalite.server_is_running)
+        return True
 
     def on_pause(self):
         return True
-
-    def on_stop(self):
-        if self.kalite.is_alive():
-            self.kalite.schedule('stop_thread')
-            self.kalite.join()
-
-    def set_thread_num(self, widget):
-        self.main_ui.add_loading_gif()
-
-        self.thread_num = self.main_ui.get_thread_num()
-        self.prepare_server()
-        self.kalite.start()
 
     @clock_callback
     def report_activity(self, activity, message):
@@ -236,13 +349,11 @@ class KALiteApp(App):
             self.activity_label = Label(text="{0} ... ".format(message), color=(0.14, 0.23, 0.25, 1))
             self.main_ui.add_messages(self.activity_label)
 
-            self.progress_tracking += 6.25
+            self.progress_tracking += 10
             self.main_ui.start_progress_bar(self.progress_tracking)
 
         elif hasattr(self, 'activity_label'):
-            self.activity_label.text = self.activity_label.text + message
-
-            self.progress_tracking += 6.25
+            self.progress_tracking += 10
             self.main_ui.start_progress_bar(self.progress_tracking)
 
 
@@ -251,54 +362,50 @@ class KALiteApp(App):
                 self.start_server(self.thread_num)
 
             if self.progress_tracking >= 97 and message == 'server is running':
-                self.main_ui.animation_bind(self.start_webview)
+                self.server_state = False
+                self.my_webview.run_webview()
                 self.main_ui.remove_loading_gif()
 
-            if self.server_state and message == 'OK':
+            if self.progress_tracking >= 97 and message == 'Loading finished':
                 self.server_state = False
-                self.start_webview_button()
+                self.my_webview.run_webview()
+                self.main_ui.remove_loading_gif()
+
+            if self.server_state and message == 'OK' and self.progress_tracking >= 97:
+                self.server_state = False
+                self.my_webview.run_webview()
                 self.main_ui.remove_loading_gif()
 
     def prepare_server(self):
         '''Schedule preparation steps to be executed in the server thread'''
 
-        schedule = self.kalite.schedule
-        schedule('extract_kalite', 'Extracting ka-lite archive')
-        schedule('setup_environment', 'Setting up environment')
-        schedule('python_version', 'Checking Python version')
-        schedule('import_django', 'Trying to import Django')
-        schedule('syncdb', 'Preparing database')
-        schedule('generate_keys', 'Generating keys')
-        schedule('create_superuser', 'Creating admin user')
-        schedule('check_server', 'Checking server status')
+        self.schedule = self.kalite.schedule
+        self.schedule('extract_kalite', 'Extracting ka-lite archive')
+
+        if not self.key_generated:
+            self.main_ui.disable_reload_bnt()
+            self.schedule('schedule_load_content', 'Loading the content')
+
+        self.schedule('setup_environment', 'Setting up environment')
+        if not self.key_generated:
+            self.schedule('create_superuser', 'Creating admin user')
+
+        else:
+            self.progress_tracking += 40
+
+        self.schedule('check_server', 'Checking server status')
 
     def start_server(self, threadnum):
-        self.thread_num = self.main_ui.get_thread_num()
-        description = "Run server. To see the KA Lite site, " + (
-            "open  http://{}:{} in browser").format(self.server_host,
-                                                    self.server_port, threadnum)
+        description = "Run server"
         if not self.kalite.server_is_running:
             self.kalite.schedule('start_server', description, threadnum)
 
-    def start_webview(self, instance, widget):
-        url = 'http://0.0.0.0:8008/'
-        webbrowser.open(url)
+    def reload_content(self, widget):
+        self.main_ui.disable_reload_bnt()
+        self.progress_tracking -= 30
+        self.main_ui.start_progress_bar(self.progress_tracking)
+        self.schedule('schedule_reload_content', 'Reloading the content')
 
-    def start_webview_button(self):
-        url = 'http://0.0.0.0:8008/'
-        webbrowser.open(url)
-
-    def start_webview_bubblebutton(self, widget):
-        url = 'http://0.0.0.0:8008/'
-        webbrowser.open(url)
-
-    def quit_app(self, widget):
-        self.stop_server(widget)
-        App.get_running_app().stop()
-
-    def stop_server(self, widget):
-        if self.kalite.server_is_running:
-            self.kalite.schedule('stop_server', 'Stop server')
 
     @clock_callback
     def start_service_part(self, threadnum):

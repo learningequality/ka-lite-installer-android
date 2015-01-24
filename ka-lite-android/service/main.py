@@ -83,7 +83,8 @@ class KALiteServer(object):
                         "port={}".format(self.app.server_port),
                         "pidfile={}".format(self.pid_file),
                         'daemonize=True',
-                        threadnum])
+                        threadnum,
+                        '--verbose'])
                 # self.execute_manager(self.settings, [
                 #         'manage.py', 'kaserve',
                 #         "host={}".format(self.app.server_host),

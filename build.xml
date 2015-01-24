@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project name="KA Lite Android builder" default="main" basedir=".">
 
-<target name="main" depends="android-vars, python-for-android, distribute,
+<target name="main" depends="android-vars, python-for-android, kalite-javahandle-copyover, AndroidManifest-tmpl-copyover, PythonActivity-copyover, kivy-icon-copyover, kivy-presplash-copyover, launcher-icon-copyover, icon-copyover, presplash-copyover, distribute,
                              ka-lite, build">
 
 </target>
@@ -44,6 +44,55 @@
   </exec>
 </target>
 
+
+<target name="kalite-javahandle-copyover"
+        description="clone the kalite_javahandle">
+
+  <delete file="python-for-android/src/src/org/kalite_javahandle/JavaHandler.java" />
+  <delete file="python-for-android/src/src/org/kalite_javahandle/VersionCode.java" />
+  <copy todir="python-for-android/src/src/org" >  
+    <fileset dir="copy-over" includes="kalite_javahandle/**"/>  
+  </copy>
+</target>
+
+<target name="AndroidManifest-tmpl-copyover"
+        description="replace the AndroidManifest.tmpl.xml">
+  <delete file="python-for-android/src/templates/AndroidManifest.tmpl.xml" />
+  <copy file="copy-over/templates/AndroidManifest.tmpl.xml" todir="python-for-android/src/templates" />
+</target>
+<target name="kivy-icon-copyover"
+        description="replace the kivy-icon.png">
+  <delete file="python-for-android/src/templates/kivy-icon.png" />
+  <copy file="copy-over/templates/kivy-icon.png" todir="python-for-android/src/templates" />
+</target>
+<target name="kivy-presplash-copyover"
+        description="replace the kivy-presplash.jpg">
+  <delete file="python-for-android/src/templates/kivy-presplash.jpg" />
+  <copy file="copy-over/templates/kivy-presplash.jpg" todir="python-for-android/src/templates" />
+</target>
+<target name="launcher-icon-copyover"
+        description="replace the launcher-icon.png">
+  <delete file="python-for-android/src/templates/launcher-icon.png" />
+  <copy file="copy-over/templates/launcher-icon.png" todir="python-for-android/src/templates" />
+</target>
+<target name="icon-copyover"
+        description="replace the icon.png">
+  <delete file="python-for-android/src/res/drawable/icon.png" />
+  <copy file="copy-over/drawable/icon.png" todir="python-for-android/src/res/drawable" />
+</target>
+<target name="presplash-copyover"
+        description="replace the presplash.jpg">
+  <delete file="python-for-android/src/res/drawable/presplash.jpg" />
+  <copy file="copy-over/drawable/presplash.jpg" todir="python-for-android/src/res/drawable" />
+</target>
+
+<target name="PythonActivity-copyover"
+        description="replace the PythonActivity.java">
+  <delete file="python-for-android/src/src/org/renpy/android/PythonActivity.java" />
+  <copy file="copy-over/PythonActivity.java" todir="python-for-android/src/src/org/renpy/android" />
+</target>
+
+
 <target name="check-python-for-android-dist">
   <condition property="python-for-android-dist-exists">
       <available file="python-for-android/dist/default" type="dir" />
@@ -60,7 +109,7 @@
     <env key="ANDROIDSDK" value="${android-sdk}" />
     <env key="ANDROIDNDK" value="${android-ndk}" />
     <arg value="-m" />
-    <arg value="sqlite3 openssl m2crypto kivy" />
+    <arg value="sqlite3 openssl kivy" />
   </exec>
   <!-- include sqlite3, wsgiref, csv, unittest modules -->
   <replaceregexp file="python-for-android/dist/default/blacklist.txt"
@@ -92,13 +141,13 @@
   <exec executable="python" failonerror="true">
      <arg line="shorten_filenames.py" />
   </exec>
-  <!-- build the zip file of the ka-lite codebase -->
+  <!-- build the zip file of the ka-lite codebase 
   <zip destfile="ka-lite-android/ka-lite.zip"
-       basedir="ka-lite" />
+       basedir="ka-lite" /> elielielieli-->
 </target>
 
 <target name="build" description="build KA Lite application">
-  <property name="app-name" value="KA Lite test" />
+  <property name="app-name" value="Connect.Teaching" />
 
   <!-- apk version = KA Lite version number -->
   <exec dir="ka-lite/kalite" executable="python" outputproperty="app-version">
