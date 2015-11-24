@@ -1,3 +1,7 @@
+Notice
+===============
+This installer project is abandoned. [The new installer](https://github.com/learningequality/ka-lite-android-installer-python27) adopts android-python27 and is structured in Eclipse ADT.
+
 KA Lite Wrapper for Android
 ===============
 
